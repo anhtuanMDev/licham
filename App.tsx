@@ -1,45 +1,64 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet, View, Pressable, Text } from 'react-native';
+import { CalendarScreen } from './src/app/calendar/CalendarScreen';
+import { SettingsScreen } from './src/app/settings/SettingsScreen';
+import { OverlayHost } from './src/overlay/OverlayHost';
+import { ToastHost } from './src/overlay/ToastHost';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+const App = () => {
+  const [tab, setTab] = useState<'calendar' | 'settings'>('calendar');
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        {tab === 'calendar' && <CalendarScreen />}
+        {tab === 'settings' && <SettingsScreen />}
+      </View>
+      
+      <View style={styles.tabBar}>
+        <Pressable style={styles.tabItem} onPress={() => setTab('calendar')}>
+          <Text style={[styles.tabText, tab === 'calendar' && styles.activeTabText]}>Lịch</Text>
+        </Pressable>
+        <Pressable style={styles.tabItem} onPress={() => setTab('settings')}>
+          <Text style={[styles.tabText, tab === 'settings' && styles.activeTabText]}>Cài Đặt</Text>
+        </Pressable>
+      </View>
+      
+      {/* Global Overlays */}
+      <OverlayHost />
+      <ToastHost />
+    </SafeAreaView>
   );
-}
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
+  content: {
+    flex: 1,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+    paddingBottom: 20, // safe area padding placeholder
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#999',
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+  }
 });
 
 export default App;
