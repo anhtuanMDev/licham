@@ -14,4 +14,30 @@ export function getYearCanChi(lunarYear: number): string {
   return `${t(stemKey)} ${t(branchKey)}`;
 }
 
-// TODO: Implement month and day Can Chi calculations based on Julian day or solar dates.
+// Fixed Julian Day calculation for simplified Day Can Chi
+export function getDayCanChi(solarDate: Date): { canChi: string; branchKey: TranslationKey; branchIndex: number } {
+  // Epoch: Jan 1, 1900 was Giáp Tuất (Stem 0, Branch 10).
+  // A simplified Julian offset approach for MVP:
+  const utcCurrent = Date.UTC(solarDate.getFullYear(), solarDate.getMonth(), solarDate.getDate());
+  const utcEpoch = Date.UTC(1900, 0, 1);
+  const diffDays = Math.floor((utcCurrent - utcEpoch) / 86400000);
+  
+  // Jan 1 1900: Giáp (0), Tuất (10)
+  const stemIndex = (0 + diffDays) % 10;
+  const branchIndex = (10 + diffDays) % 12;
+  
+  const stemKey = HEAVENLY_STEMS[stemIndex];
+  const branchKey = EARTHLY_BRANCHES[branchIndex];
+  
+  return { 
+    canChi: `${t(stemKey)} ${t(branchKey)}`,
+    branchKey,
+    branchIndex
+  };
+}
+
+// Lục Xung (6 conflicting pairs): difference of 6 in the 12-branch cycle
+export function getConflictingBranch(branchIndex: number): string {
+  const conflictIndex = (branchIndex + 6) % 12;
+  return t(EARTHLY_BRANCHES[conflictIndex]);
+}

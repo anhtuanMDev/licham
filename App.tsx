@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, StyleSheet, View, Pressable, Text } from 'react-native';
 import { CalendarScreen } from './src/app/calendar/CalendarScreen';
 import { RemindersScreen } from './src/app/reminders/RemindersScreen';
 import { SettingsScreen } from './src/app/settings/SettingsScreen';
 import { OverlayHost } from './src/overlay/OverlayHost';
 import { ToastHost } from './src/overlay/ToastHost';
+import { midnightTicker } from './src/scheduling/midnightTicker';
 
 const App = () => {
   const [tab, setTab] = useState<'calendar' | 'reminders' | 'settings'>('calendar');
+
+  useEffect(() => {
+    midnightTicker.start();
+    
+    return () => {
+      midnightTicker.stop();
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>

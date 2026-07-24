@@ -1,0 +1,34 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build the Android App Bundle (AAB) for release"
+  lane :build do
+    gradle(task: "clean")
+    gradle(
+      task: "bundle",
+      build_type: "Release"
+    )
+  end
+
+  desc "Build and upload to Google Play Internal track"
+  lane :beta do
+    build
+    
+    # NOTE: You must provide a Google Play Service Account JSON key
+    # Place the downloaded json file securely and set the path below
+    upload_to_play_store(
+      track: 'internal',
+      json_key: 'fastlane/play_store_key.json', # Update this path!
+      aab: 'app/build/outputs/bundle/release/app-release.aab'
+    )
+  end
+  
+  desc "Promote Internal build to Production"
+  lane :release do
+    upload_to_play_store(
+      track: 'production',
+      json_key: 'fastlane/play_store_key.json',
+      aab: 'app/build/outputs/bundle/release/app-release.aab'
+    )
+  end
+end

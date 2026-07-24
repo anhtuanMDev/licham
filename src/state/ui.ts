@@ -3,7 +3,8 @@ import { observable } from '@legendapp/state';
 export type ModalPayload = 
   | { type: 'reminder_edit'; props: { existingId?: string } }
   | { type: 'date_search'; props?: never }
-  | { type: 'day_detail'; props: { dateIso: string } };
+  | { type: 'day_detail'; props: { dateIso: string } }
+  | { type: 'good_day_finder'; props?: never };
 export type ApiStatus = 'idle' | 'pending' | 'success' | 'error' | 'cancelled';
 
 export type Toast = {

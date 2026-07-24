@@ -30,6 +30,10 @@ export const DayCell = observer(({ dateIso, solarDay, isToday, isCurrentMonth }:
         isToday && styles.todayContainer
       ]} 
       onPress={handlePress}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`Ngày ${solarDay} tháng dương lịch. ${lunarInfo ? `Ngày ${lunarInfo.day} tháng ${lunarInfo.month} âm lịch.` : ''}`}
+      accessibilityHint="Nhấn đúp để xem chi tiết giờ và tuổi xung khắc"
     >
       <Text style={[
         styles.solarText, 

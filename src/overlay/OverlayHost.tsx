@@ -5,30 +5,44 @@ import { ui$ } from '../state/ui';
 import { overlay } from './overlay';
 
 import { ReminderDetailSheet } from '../app/reminders/ReminderDetailSheet';
+import { GoodDayFinderModal } from '../app/calendar/GoodDayFinderModal';
+import { DayDetailSheet } from '../app/calendar/DayDetailSheet';
 
 // Stub components for the modals to be implemented later
-const DayDetailSheet = (props: any) => <View style={styles.sheet}><Text>Day Detail Sheet Stub</Text></View>;
-const DateSearchModal = (props: any) => <View style={styles.sheet}><Text>Date Search Stub</Text></View>;
-
-const modalMap: Record<string, React.FC<any>> = {
-  day_detail: DayDetailSheet,
-  date_search: DateSearchModal,
-  reminder_edit: ReminderDetailSheet,
-};
+const DateSearchModal = () => <View style={styles.sheet}><Text>Date Search Stub</Text></View>;
 
 export const OverlayHost = observer(() => {
   const currentModal = ui$.modal.get();
   
   if (!currentModal) return null;
   
-  const Component = modalMap[currentModal.type];
+  let content: React.ReactNode = null;
+
+  switch (currentModal.type) {
+    case 'day_detail':
+      content = <DayDetailSheet {...currentModal.props} />;
+      break;
+    case 'date_search':
+      content = <DateSearchModal />;
+      break;
+    case 'reminder_edit':
+      content = <ReminderDetailSheet {...currentModal.props} />;
+      break;
+    case 'good_day_finder':
+      content = <GoodDayFinderModal />;
+      break;
+    default:
+      // Exhaustiveness check
+      const _exhaustiveCheck: never = currentModal;
+      break;
+  }
   
   return (
     <Modal visible={true} transparent={true} animationType="fade">
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropPressable} onPress={overlay.closeModal} />
         <View style={styles.modalContent}>
-          {Component && <Component {...currentModal.props} />}
+          {content}
         </View>
       </View>
     </Modal>
