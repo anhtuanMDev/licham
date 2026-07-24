@@ -7,6 +7,7 @@ export const settings$ = observable({
   theme: 'light' as 'light' | 'dark' | 'high-contrast',
   fontScale: 1.0,
   notificationsEnabled: true,
+  isPremium: false,
 });
 
 persistObservable(settings$, {

@@ -4,8 +4,11 @@ import { LegendList } from '@legendapp/list/react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from '@legendapp/state/react';
 import { calendar$ } from '../../state/calendar';
+import { settings$ } from '../../state/settings';
 import { CalendarGrid } from '../../components/CalendarGrid';
 import { overlay } from '../../overlay/overlay';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { t } from '../../core/i18n/t';
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +35,7 @@ const generateMonths = (centerYear: number, centerMonth: number, radius: number)
 export const CalendarScreen = observer(() => {
   const insets = useSafeAreaInsets();
   const currentMonth = calendar$.visibleMonth.get();
+  const isPremium = settings$.isPremium.get();
   
   // We'd dynamically extend this array in a real app when scrolling near the edges
   const [data] = useState<MonthItem[]>(() => generateMonths(currentMonth.year, currentMonth.month, 12));
@@ -46,22 +50,30 @@ export const CalendarScreen = observer(() => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header" allowFontScaling={true}>
-          Tháng {currentMonth.month}, {currentMonth.year}
+          {t('calendar.month' as any)} {currentMonth.month}, {currentMonth.year}
         </Text>
         <Pressable 
           style={styles.goodDayBtn}
           onPress={() => overlay.showModal({ type: 'good_day_finder' })}
           accessibilityRole="button"
-          accessibilityLabel="Tìm Ngày Tốt"
+          accessibilityLabel={t('calendar.find_good_day' as any)}
           accessibilityHint="Nhấn đúp để mở công cụ tìm ngày tốt"
         >
-          <Text style={styles.goodDayBtnText} allowFontScaling={true}>Tìm Ngày Tốt</Text>
+          <Text style={styles.goodDayBtnText} allowFontScaling={true}>{t('calendar.find_good_day' as any)}</Text>
         </Pressable>
       </View>
       
       <View style={styles.weekdays}>
-        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => (
-          <Text key={d} style={styles.weekdayText}>{d}</Text>
+        {[
+          t('calendar.weekday.t2' as any),
+          t('calendar.weekday.t3' as any),
+          t('calendar.weekday.t4' as any),
+          t('calendar.weekday.t5' as any),
+          t('calendar.weekday.t6' as any),
+          t('calendar.weekday.t7' as any),
+          t('calendar.weekday.cn' as any),
+        ].map((d, index) => (
+          <Text key={index} style={styles.weekdayText}>{d}</Text>
         ))}
       </View>
       
@@ -75,6 +87,18 @@ export const CalendarScreen = observer(() => {
         showsHorizontalScrollIndicator={false}
         // initialScrollIndex to center on the current month would be added here
       />
+      
+      {!isPremium && (
+        <View style={styles.adContainer}>
+          <BannerAd
+            unitId={TestIds.BANNER}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+          />
+        </View>
+      )}
     </View>
   );
 });
@@ -119,5 +143,13 @@ const styles = StyleSheet.create({
   },
   page: {
     width,
+  },
+  adContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f8f8',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    minHeight: 50,
   }
 });

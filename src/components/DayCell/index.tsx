@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { observer } from '@legendapp/state/react';
 import { calendar$ } from '../../state/calendar';
 import { overlay } from '../../overlay/overlay';
+import { getEventsForDate } from '../../core/events';
+import { parse } from 'date-fns';
+import { t } from '../../core/i18n/t';
 
 interface DayCellProps {
   dateIso: string;
@@ -15,6 +18,10 @@ export const DayCell = observer(({ dateIso, solarDay, isToday, isCurrentMonth }:
   // Fine-grained subscription: only re-renders if THIS specific lunar day changes in cache
   const lunarInfo = calendar$.lunarCache[dateIso].get();
   const isSelected = calendar$.selectedDate.get() === dateIso;
+  
+  // Check for auto-computed holidays
+  const events = lunarInfo ? getEventsForDate(parse(dateIso, 'yyyy-MM-dd', new Date()), lunarInfo) : [];
+  const hasEvent = events.length > 0;
 
   const handlePress = () => {
     calendar$.selectedDate.set(dateIso);
@@ -32,8 +39,8 @@ export const DayCell = observer(({ dateIso, solarDay, isToday, isCurrentMonth }:
       onPress={handlePress}
       accessible={true}
       accessibilityRole="button"
-      accessibilityLabel={`Ngày ${solarDay} tháng dương lịch. ${lunarInfo ? `Ngày ${lunarInfo.day} tháng ${lunarInfo.month} âm lịch.` : ''}`}
-      accessibilityHint="Nhấn đúp để xem chi tiết giờ và tuổi xung khắc"
+      accessibilityLabel={`${t('calendar.accessibility.day' as any)} ${solarDay} ${t('calendar.accessibility.solar_month' as any)}. ${lunarInfo ? `${t('calendar.accessibility.day' as any)} ${lunarInfo.day} ${t('calendar.accessibility.lunar_month' as any)} ${lunarInfo.month} ${t('calendar.accessibility.lunar' as any)}.` : ''}`}
+      accessibilityHint={t('calendar.accessibility.hint' as any)}
     >
       <Text style={[
         styles.solarText, 
@@ -51,6 +58,8 @@ export const DayCell = observer(({ dateIso, solarDay, isToday, isCurrentMonth }:
           {lunarInfo.day === 1 ? `${lunarInfo.day}/${lunarInfo.month}` : lunarInfo.day}
         </Text>
       )}
+      
+      {hasEvent && <View style={styles.eventDot} />}
     </Pressable>
   );
 });
@@ -92,5 +101,13 @@ const styles = StyleSheet.create({
   lunarSpecialText: {
     color: 'red',
     fontWeight: '500',
+  },
+  eventDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#d32f2f',
+    position: 'absolute',
+    bottom: 4,
   }
 });

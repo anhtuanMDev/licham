@@ -4,7 +4,9 @@ import { overlay } from '../../overlay/overlay';
 import { format, parse } from 'date-fns';
 import { solarToLunar } from '../../core/lunar/convert';
 import { getDayCanChi, getYearCanChi, getConflictingBranch } from '../../core/lunar/canChi';
+import { getEventsForDate } from '../../core/events';
 import { MoonPhase } from '../../components/MoonPhase';
+import { t } from '../../core/i18n/t';
 
 type Props = {
   dateIso: string;
@@ -20,51 +22,63 @@ export const DayDetailSheet: React.FC<Props> = ({ dateIso }) => {
   const dayCanChi = getDayCanChi(solarDate);
   const yearCanChi = getYearCanChi(lunar.year);
   const conflictingBranch = getConflictingBranch(dayCanChi.branchIndex);
+  
+  // Calculate Events
+  const events = getEventsForDate(solarDate, lunar);
 
   return (
     <View 
       style={styles.container}
       accessible={true}
       accessibilityRole="summary"
-      accessibilityLabel={`Chi tiết ngày ${format(solarDate, 'dd/MM/yyyy')}, âm lịch ${lunar.day} tháng ${lunar.month}`}
+      accessibilityLabel={`${t('calendar.day_detail_title' as any)} ${format(solarDate, 'dd/MM/yyyy')}, ${t('calendar.lunar_date_prefix' as any)} ${lunar.day} ${t('calendar.accessibility.lunar_month' as any)} ${lunar.month}`}
     >
-      <Text style={styles.header} accessibilityRole="header">Chi Tiết Ngày</Text>
+      <Text style={styles.header} accessibilityRole="header">{t('calendar.day_detail_title' as any)}</Text>
       
       <View style={styles.dateBlock}>
         <MoonPhase lunarDay={lunar.day} size={80} />
         <Text style={styles.solarLarge} allowFontScaling={true}>{format(solarDate, 'dd/MM/yyyy')}</Text>
         <Text style={styles.lunarSubtitle} allowFontScaling={true}>
-          Âm lịch: {lunar.day}/{lunar.month}/{lunar.year}
+          {t('calendar.lunar_date_prefix' as any)}: {lunar.day}/{lunar.month}/{lunar.year}
         </Text>
       </View>
       
       <View style={styles.infoBlock}>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Ngày:</Text>
+          <Text style={styles.infoLabel}>{t('calendar.day_label' as any)}:</Text>
           <Text style={styles.infoValue}>{dayCanChi.canChi}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Năm:</Text>
+          <Text style={styles.infoLabel}>{t('calendar.year_label' as any)}:</Text>
           <Text style={styles.infoValue}>{yearCanChi}</Text>
         </View>
       </View>
       
       <View style={styles.conflictBlock}>
-        <Text style={styles.conflictTitle}>⚠️ Tuổi Xung Khắc (Lục Xung)</Text>
+        <Text style={styles.conflictTitle}>{t('calendar.conflict_title' as any)}</Text>
         <Text style={styles.conflictText}>
-          Ngày {dayCanChi.canChi} xung khắc với tuổi <Text style={styles.conflictHighlight}>{conflictingBranch}</Text>. 
-          Những người tuổi {conflictingBranch} nên cẩn trọng khi ra quyết định lớn trong ngày hôm nay.
+          {t('calendar.conflict_desc_1' as any)} {dayCanChi.canChi} {t('calendar.conflict_desc_2' as any)} <Text style={styles.conflictHighlight}>{conflictingBranch}</Text>. 
+          {t('calendar.conflict_desc_3' as any)} {conflictingBranch} {t('calendar.conflict_desc_4' as any)}
         </Text>
       </View>
+      
+      {events.length > 0 && (
+        <View style={styles.eventBlock}>
+          <Text style={styles.eventTitle}>{t('event.title' as any)}</Text>
+          {events.map((eventKey, idx) => (
+            <Text key={idx} style={styles.eventText}>• {t(eventKey)}</Text>
+          ))}
+        </View>
+      )}
       
       <Pressable 
         style={styles.closeBtn} 
         onPress={() => overlay.closeModal()}
         accessibilityRole="button"
-        accessibilityLabel="Đóng chi tiết ngày"
-        accessibilityHint="Nhấn đúp để đóng"
+        accessibilityLabel={t('calendar.close' as any)}
+        accessibilityHint={t('calendar.close' as any)}
       >
-        <Text style={styles.closeBtnText} allowFontScaling={true}>Đóng</Text>
+        <Text style={styles.closeBtnText} allowFontScaling={true}>{t('calendar.close' as any)}</Text>
       </Pressable>
     </View>
   );
@@ -140,6 +154,26 @@ const styles = StyleSheet.create({
   conflictHighlight: {
     fontWeight: 'bold',
     textTransform: 'uppercase',
+  },
+  eventBlock: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 8,
+  },
+  eventText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
+    marginBottom: 4,
   },
   closeBtn: {
     padding: 16,
