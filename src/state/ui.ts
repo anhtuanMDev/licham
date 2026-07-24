@@ -1,6 +1,9 @@
 import { observable } from '@legendapp/state';
 
-export type ModalType = 'reminder_edit' | 'date_search' | 'day_detail';
+export type ModalPayload = 
+  | { type: 'reminder_edit'; props: { existingId?: string } }
+  | { type: 'date_search'; props?: never }
+  | { type: 'day_detail'; props: { dateIso: string } };
 export type ApiStatus = 'idle' | 'pending' | 'success' | 'error' | 'cancelled';
 
 export type Toast = {
@@ -11,7 +14,7 @@ export type Toast = {
 };
 
 export const ui$ = observable({
-  modal: null as { id: string; type: ModalType; props: any } | null,
+  modal: null as (ModalPayload & { id: string }) | null,
   toastQueue: [] as Toast[],
   api: {} as Record<string, { status: ApiStatus; error?: string }>,
 });

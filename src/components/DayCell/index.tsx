@@ -19,7 +19,7 @@ export const DayCell = observer(({ dateIso, solarDay, isToday, isCurrentMonth }:
   const handlePress = () => {
     calendar$.selectedDate.set(dateIso);
     // Optionally open the detail sheet on press
-    overlay.showModal('day_detail', { dateIso });
+    overlay.showModal({ type: 'day_detail', props: { dateIso } });
   };
 
   return (

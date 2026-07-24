@@ -1,16 +1,15 @@
-import { ui$, ModalType, Toast } from '../state/ui';
+import { ui$, ModalPayload, Toast } from '../state/ui';
 
 let idCounter = 0;
 const generateId = () => `id_${Date.now()}_${++idCounter}`;
 
 export const overlay = {
-  showModal(type: ModalType, props?: any, priority: 'critical' | 'normal' = 'normal') {
+  showModal(payload: ModalPayload, priority: 'critical' | 'normal' = 'normal') {
     // In a real app with queuing, we would push to an array.
     // For MVP, we just set the single active modal.
     ui$.modal.set({
       id: generateId(),
-      type,
-      props,
+      ...payload
     });
   },
   

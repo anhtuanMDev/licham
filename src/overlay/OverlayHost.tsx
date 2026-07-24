@@ -4,15 +4,16 @@ import { observer } from '@legendapp/state/react';
 import { ui$ } from '../state/ui';
 import { overlay } from './overlay';
 
+import { ReminderDetailSheet } from '../app/reminders/ReminderDetailSheet';
+
 // Stub components for the modals to be implemented later
 const DayDetailSheet = (props: any) => <View style={styles.sheet}><Text>Day Detail Sheet Stub</Text></View>;
 const DateSearchModal = (props: any) => <View style={styles.sheet}><Text>Date Search Stub</Text></View>;
-const ReminderEditModal = (props: any) => <View style={styles.sheet}><Text>Reminder Edit Stub</Text></View>;
 
-const modalMap = {
+const modalMap: Record<string, React.FC<any>> = {
   day_detail: DayDetailSheet,
   date_search: DateSearchModal,
-  reminder_edit: ReminderEditModal,
+  reminder_edit: ReminderDetailSheet,
 };
 
 export const OverlayHost = observer(() => {
