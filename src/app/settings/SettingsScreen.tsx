@@ -5,6 +5,8 @@ import { observer } from '@legendapp/state/react';
 import { settings$ } from '../../state/settings';
 import { t } from '../../core/i18n/t';
 
+import { iapManager } from '../../core/iap/iapManager';
+
 export const SettingsScreen = observer(() => {
   const insets = useSafeAreaInsets();
   const settings = settings$.get();
@@ -15,6 +17,10 @@ export const SettingsScreen = observer(() => {
 
   const toggleNotifications = () => {
     settings$.notificationsEnabled.set(!settings.notificationsEnabled);
+  };
+
+  const handleRestore = () => {
+    iapManager.restorePurchases();
   };
 
   return (
@@ -35,6 +41,11 @@ export const SettingsScreen = observer(() => {
           onValueChange={toggleNotifications} 
         />
       </View>
+
+      <Pressable style={styles.row} onPress={handleRestore}>
+        <Text style={styles.label}>Khôi phục mua hàng (Restore Purchases)</Text>
+        <Text style={styles.value}>›</Text>
+      </Pressable>
       
       <View style={styles.premiumBlock}>
         <Text style={styles.premiumTitle}>

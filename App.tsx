@@ -8,14 +8,18 @@ import { ToastHost } from './src/overlay/ToastHost';
 import { midnightTicker } from './src/scheduling/midnightTicker';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import { iapManager } from './src/core/iap/iapManager';
+
 const App = () => {
   const [tab, setTab] = useState<'calendar' | 'reminders' | 'settings'>('calendar');
 
   useEffect(() => {
     midnightTicker.start();
+    iapManager.init();
 
     return () => {
       midnightTicker.stop();
+      iapManager.destroy();
     };
   }, []);
 
