@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Pressable, TextInput, Switch } from 'react-nati
 import { overlay } from '../../overlay/overlay';
 import { reminders$, remindersActions } from '../../state/reminders';
 import { notifications } from '../../scheduling/notifications';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
+import { solarToLunar } from '../../core/lunar/convert';
 
 type Props = {
   existingId?: string;
@@ -14,35 +15,58 @@ export const ReminderDetailSheet: React.FC<Props> = ({ existingId }) => {
   
   const [title, setTitle] = useState(existing?.title || '');
   const [calendarType, setCalendarType] = useState<'solar' | 'lunar'>(existing?.calendarType || 'lunar');
-  // Simple fallback date string for MVP
-  const [dateStr, setDateStr] = useState(existing?.date || format(new Date(), 'yyyy-MM-dd'));
+  const [dateStr, setDateStr] = useState(existing?.date || (calendarType === 'solar' ? format(new Date(), 'yyyy-MM-dd') : format(new Date(), 'dd/MM/yyyy')));
   const [repeatYearly, setRepeatYearly] = useState(existing?.repeatYearly ?? true);
+
+  // Compute converted lunar date when calendarType === 'solar'
+  let convertedLunarStr: string | null = null;
+  if (calendarType === 'solar' && dateStr.trim()) {
+    try {
+      const parsedDate = parse(dateStr.trim(), 'yyyy-MM-dd', new Date());
+      if (!isNaN(parsedDate.getTime())) {
+        const lunar = solarToLunar(parsedDate.getDate(), parsedDate.getMonth() + 1, parsedDate.getFullYear());
+        const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+        convertedLunarStr = `${pad(lunar.day)}/${pad(lunar.month)}/${lunar.year}`;
+      }
+    } catch (e) {
+      convertedLunarStr = null;
+    }
+  }
 
   const handleSave = async () => {
     if (!title.trim()) {
       overlay.showToast('Vui lòng nhập tiêu đề', { type: 'error' });
       return;
     }
-    
-    // Request permissions before saving if we're doing notifications
+
+    if (calendarType === 'solar' && !convertedLunarStr) {
+      overlay.showToast('Ngày Dương lịch không hợp lệ (Định dạng: YYYY-MM-DD)', { type: 'error' });
+      return;
+    }
+
     await notifications.requestPermission();
+
+    // 1. If input is Lunar: store Lunar date directly
+    // 2. If input is Solar: save converted Lunar date as a Lunar reminder
+    const finalCalendarType = 'lunar';
+    const finalDate = calendarType === 'solar' ? convertedLunarStr! : dateStr.trim();
 
     if (existingId) {
       await remindersActions.updateReminder(existingId, {
         title,
-        calendarType,
-        date: dateStr,
+        calendarType: finalCalendarType,
+        date: finalDate,
         repeatYearly
       });
-      overlay.showToast('Đã cập nhật');
+      overlay.showToast(`Đã lưu lịch Âm: ${finalDate}`);
     } else {
       await remindersActions.addReminder({
         title,
-        calendarType,
-        date: dateStr,
+        calendarType: finalCalendarType,
+        date: finalDate,
         repeatYearly
       });
-      overlay.showToast('Đã thêm nhắc nhở');
+      overlay.showToast(`Đã thêm lịch Âm: ${finalDate}`);
     }
     
     overlay.closeModal();
@@ -60,7 +84,7 @@ export const ReminderDetailSheet: React.FC<Props> = ({ existingId }) => {
       />
       
       <View style={styles.row}>
-        <Text style={styles.label}>Loại lịch:</Text>
+        <Text style={styles.label}>Nhập theo lịch:</Text>
         <Pressable 
           style={[styles.chip, calendarType === 'lunar' && styles.chipActive]}
           onPress={() => setCalendarType('lunar')}>
@@ -75,10 +99,19 @@ export const ReminderDetailSheet: React.FC<Props> = ({ existingId }) => {
       
       <TextInput
         style={styles.input}
-        placeholder={calendarType === 'solar' ? 'YYYY-MM-DD' : 'DD/MM/YYYY'}
+        placeholder={calendarType === 'solar' ? 'YYYY-MM-DD (VD: 2026-07-25)' : 'DD/MM/YYYY (VD: 12/06/2026)'}
         value={dateStr}
         onChangeText={setDateStr}
       />
+
+      {calendarType === 'solar' && (
+        <View style={styles.conversionBox}>
+          <Text style={styles.conversionLabel}>Tự động quy đổi sang Âm lịch:</Text>
+          <Text style={styles.conversionValue}>
+            {convertedLunarStr ? `${convertedLunarStr} (Âm lịch)` : 'Chưa đúng định dạng YYYY-MM-DD'}
+          </Text>
+        </View>
+      )}
       
       <View style={styles.row}>
         <Text style={styles.label}>Lặp lại hằng năm</Text>
@@ -90,7 +123,9 @@ export const ReminderDetailSheet: React.FC<Props> = ({ existingId }) => {
           <Text style={styles.btnTextCancel}>Hủy</Text>
         </Pressable>
         <Pressable style={[styles.btn, styles.btnSave]} onPress={handleSave}>
-          <Text style={styles.btnTextSave}>Lưu</Text>
+          <Text style={styles.btnTextSave}>
+            {calendarType === 'solar' ? 'Xác nhận & Lưu Âm Lịch' : 'Lưu'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -114,6 +149,22 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     marginBottom: 16,
+  },
+  conversionBox: {
+    backgroundColor: '#e8f0fe',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  conversionLabel: {
+    fontSize: 13,
+    color: '#555',
+    marginBottom: 4,
+  },
+  conversionValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007AFF',
   },
   row: {
     flexDirection: 'row',
