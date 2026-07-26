@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { observer } from '@legendapp/state/react';
 import { format } from 'date-fns';
 import { DayCell } from '../DayCell';
 import { calendar$ } from '../../state/calendar';
-import { solarToLunar } from '../../core/lunar/convert';
+import { solarToLunar, LunarDate } from '../../core/lunar/convert';
 
 interface CalendarGridProps {
   year: number;
@@ -12,7 +12,7 @@ interface CalendarGridProps {
 }
 
 export const CalendarGrid = observer(({ year, month }: CalendarGridProps) => {
-  // Generate the 42-cell grid for the given month
+  // Generate the 42-cell grid and compute lunar dates synchronously
   const grid = React.useMemo(() => {
     const firstDay = new Date(year, month - 1, 1);
     const startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Mon-Sun
@@ -22,31 +22,26 @@ export const CalendarGrid = observer(({ year, month }: CalendarGridProps) => {
     
     for (let i = 0; i < 42; i++) {
       const dateIso = format(current, 'yyyy-MM-dd');
+      const dd = current.getDate();
+      const mm = current.getMonth() + 1;
+      const yy = current.getFullYear();
+
+      // Compute lunar date synchronously — no cache, no useEffect race
+      const lunar = solarToLunar(dd, mm, yy);
+
+      // Also populate the observable cache for other consumers (DayDetailSheet, etc.)
+      calendar$.lunarCache[dateIso].set(lunar);
+
       cells.push({
         dateIso,
-        solarDay: current.getDate(),
+        solarDay: dd,
         isCurrentMonth: current.getMonth() === month - 1,
-        dateObj: new Date(current), // Clone
+        lunar,
       });
       current.setDate(current.getDate() + 1);
     }
     return cells;
   }, [year, month]);
-
-  // Pre-populate lunar cache for this grid
-  useEffect(() => {
-    const cache = calendar$.lunarCache.get();
-    let updated = false;
-    
-    grid.forEach(cell => {
-      if (!cache[cell.dateIso]) {
-        const d = cell.dateObj;
-        calendar$.lunarCache[cell.dateIso].set(
-          solarToLunar(d.getDate(), d.getMonth() + 1, d.getFullYear())
-        );
-      }
-    });
-  }, [grid]);
 
   const todayIso = format(new Date(), 'yyyy-MM-dd');
 
@@ -57,6 +52,7 @@ export const CalendarGrid = observer(({ year, month }: CalendarGridProps) => {
           <DayCell 
             dateIso={cell.dateIso}
             solarDay={cell.solarDay}
+            lunarInfo={cell.lunar}
             isCurrentMonth={cell.isCurrentMonth}
             isToday={cell.dateIso === todayIso}
           />

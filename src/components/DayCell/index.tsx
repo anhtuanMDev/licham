@@ -6,17 +6,17 @@ import { overlay } from '../../overlay/overlay';
 import { getEventsForDate } from '../../core/events';
 import { parse } from 'date-fns';
 import { t } from '../../core/i18n/t';
+import { LunarDate } from '../../core/lunar/convert';
 
 interface DayCellProps {
   dateIso: string;
   solarDay: number;
+  lunarInfo: LunarDate;
   isToday: boolean;
   isCurrentMonth: boolean;
 }
 
-export const DayCell = observer(({ dateIso, solarDay, isToday, isCurrentMonth }: DayCellProps) => {
-  // Fine-grained subscription: only re-renders if THIS specific lunar day changes in cache
-  const lunarInfo = calendar$.lunarCache[dateIso].get();
+export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurrentMonth }: DayCellProps) => {
   const isSelected = calendar$.selectedDate.get() === dateIso;
   
   // Check for auto-computed holidays

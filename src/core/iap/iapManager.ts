@@ -1,4 +1,5 @@
 import { initConnection, endConnection, getAvailablePurchases, purchaseUpdatedListener, purchaseErrorListener } from 'react-native-iap';
+import { Platform } from 'react-native';
 import { settings$ } from '../../state/settings';
 import { overlay } from '../../overlay/overlay';
 
@@ -6,12 +7,27 @@ export const PREMIUM_PRODUCT_ID = 'licham_premium';
 
 let purchaseUpdateSubscription: any = null;
 let purchaseErrorSubscription: any = null;
+let isConnected = false;
 
 export const iapManager = {
   async init() {
+    // Skip IAP on emulator/dev builds — billing service is unavailable
+    if (__DEV__) {
+      console.log('[IAP] Skipping IAP init in dev mode.');
+      return;
+    }
     try {
-      await initConnection();
-      
+      const result = await initConnection();
+      isConnected = !!result;
+
+      if (!isConnected) {
+        // No billing service available (emulator, no Play Store, etc.)
+        if (__DEV__) {
+          console.log('[IAP] Billing service not available — skipping IAP setup (dev mode).');
+        }
+        return;
+      }
+
       // Auto restore/verify existing active purchases on app launch
       await this.verifyPurchases();
 
@@ -24,14 +40,20 @@ export const iapManager = {
       });
 
       purchaseErrorSubscription = purchaseErrorListener((error) => {
-        console.warn('IAP purchaseErrorListener:', error);
+        if (__DEV__) {
+          console.log('[IAP] Purchase error (non-fatal):', error.message);
+        }
       });
-    } catch (err) {
-      console.warn('Failed to initialize IAP connection:', err);
+    } catch (err: any) {
+      // ServiceDisconnected, billing unavailable, emulator — all non-fatal
+      if (__DEV__) {
+        console.log('[IAP] Init skipped:', err?.message || err);
+      }
     }
   },
 
   async verifyPurchases() {
+    if (!isConnected) return false;
     try {
       const purchases = await getAvailablePurchases();
       const hasPremium = purchases.some(p => p.productId === PREMIUM_PRODUCT_ID);
@@ -39,13 +61,19 @@ export const iapManager = {
         settings$.isPremium.set(true);
       }
       return hasPremium;
-    } catch (err) {
-      console.warn('Failed to verify purchases:', err);
+    } catch (err: any) {
+      if (__DEV__) {
+        console.log('[IAP] Could not verify purchases:', err?.message || err);
+      }
       return false;
     }
   },
 
   async restorePurchases() {
+    if (!isConnected) {
+      overlay.showToast('Dịch vụ mua hàng không khả dụng trên thiết bị này.', { type: 'error' });
+      return;
+    }
     try {
       const hasPremium = await this.verifyPurchases();
       if (hasPremium) {
@@ -67,6 +95,7 @@ export const iapManager = {
       purchaseErrorSubscription.remove();
       purchaseErrorSubscription = null;
     }
+    isConnected = false;
     endConnection().catch(() => {});
   }
 };
