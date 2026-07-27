@@ -7,6 +7,7 @@ import { getEventsForDate } from '../../core/events';
 import { parse } from 'date-fns';
 import { t } from '../../core/i18n/t';
 import { LunarDate } from '../../core/lunar/convert';
+import { useAppTheme } from '../../core/theme';
 
 interface DayCellProps {
   dateIso: string;
@@ -18,6 +19,7 @@ interface DayCellProps {
 
 export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurrentMonth }: DayCellProps) => {
   const isSelected = calendar$.selectedDate.get() === dateIso;
+  const { colors, scale } = useAppTheme();
   
   // Check for auto-computed holidays
   const events = lunarInfo ? getEventsForDate(parse(dateIso, 'yyyy-MM-dd', new Date()), lunarInfo) : [];
@@ -35,9 +37,10 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
   return (
     <Pressable 
       style={({ pressed }) => [
-        styles.container, 
-        (isSelected || pressed) && styles.selectedContainer,
-        isToday && styles.todayContainer
+        styles.container,
+        { borderColor: colors.border },
+        (isSelected || pressed) && [styles.selectedContainer, { backgroundColor: colors.primary + '1a', borderColor: colors.primary }],
+        isToday && [styles.todayContainer, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]
       ]} 
       onPress={handlePress}
       onLongPress={handleLongPress}
@@ -47,9 +50,10 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
       accessibilityHint={t('calendar.accessibility.hint' as any)}
     >
       <Text style={[
-        styles.solarText, 
-        !isCurrentMonth && styles.outOfMonthText,
-        (isToday || isSelected) && styles.highlightText
+        styles.solarText,
+        { fontSize: scale(18), color: colors.text },
+        !isCurrentMonth && [styles.outOfMonthText, { color: colors.border }],
+        (isToday || isSelected) && [styles.highlightText, { color: isToday ? colors.danger : colors.primary }]
       ]}>
         {solarDay}
       </Text>
@@ -57,13 +61,14 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
       {lunarInfo && (
         <Text style={[
           styles.lunarText,
-          (lunarInfo.day === 1 || lunarInfo.day === 15) && styles.lunarSpecialText
+          { fontSize: scale(12), color: colors.textMuted },
+          (lunarInfo.day === 1 || lunarInfo.day === 15) && [styles.lunarSpecialText, { color: colors.danger }]
         ]}>
           {lunarInfo.day === 1 ? `${lunarInfo.day}/${lunarInfo.month}` : lunarInfo.day}
         </Text>
       )}
       
-      {hasEvent && <View style={styles.eventDot} />}
+      {hasEvent && <View style={[styles.eventDot, { backgroundColor: colors.danger }]} />}
     </Pressable>
   );
 });
@@ -75,42 +80,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0.5,
-    borderColor: '#eee',
   },
-  selectedContainer: {
-    backgroundColor: 'rgba(0,122,255,0.1)',
-    borderColor: '#007AFF',
-  },
-  todayContainer: {
-    backgroundColor: '#fff0f0',
-    borderColor: 'red',
-  },
+  selectedContainer: {},
+  todayContainer: {},
   solarText: {
-    fontSize: 18,
     fontWeight: '500',
-    color: '#333',
   },
-  outOfMonthText: {
-    color: '#ccc',
-  },
+  outOfMonthText: {},
   highlightText: {
     fontWeight: 'bold',
-    color: '#007AFF',
   },
   lunarText: {
-    fontSize: 12,
-    color: '#666',
     marginTop: 2,
   },
   lunarSpecialText: {
-    color: 'red',
     fontWeight: '500',
   },
   eventDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#d32f2f',
     position: 'absolute',
     bottom: 4,
   }

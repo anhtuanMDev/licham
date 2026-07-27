@@ -5,10 +5,13 @@ import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { overlay } from '../../overlay/overlay';
 import { reminders$, remindersActions } from '../../state/reminders';
+import { useAppTheme } from '../../core/theme';
+import { t } from '../../core/i18n/t';
 
 export const RemindersScreen = observer(() => {
   const insets = useSafeAreaInsets();
   const reminders = reminders$.get();
+  const { colors, scale } = useAppTheme();
 
   const handleAdd = () => {
     overlay.showModal({ type: 'reminder_edit', props: {} });
@@ -19,19 +22,19 @@ export const RemindersScreen = observer(() => {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('Xóa nhắc nhở', 'Bạn có chắc chắn muốn xóa nhắc nhở này?', [
-      { text: 'Hủy', style: 'cancel' },
-      { text: 'Xóa', style: 'destructive', onPress: () => {
+    Alert.alert(t('reminders.deleteConfirmTitle'), t('reminders.deleteConfirmMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('reminders.delete'), style: 'destructive', onPress: () => {
         remindersActions.deleteReminder(id);
-        overlay.showToast('Đã xóa nhắc nhở');
+        overlay.showToast(t('reminders.deleted'));
       }}
     ]);
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Nhắc Nhở</Text>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, { fontSize: scale(24), color: colors.text }]}>{t('reminders.title')}</Text>
       </View>
 
       <LegendList
@@ -40,27 +43,27 @@ export const RemindersScreen = observer(() => {
         estimatedItemSize={80}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>Chưa có nhắc nhở nào</Text>
+            <Text style={[styles.emptyText, { fontSize: scale(14), color: colors.textMuted }]}>{t('reminders.empty')}</Text>
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => handleEdit(item.id)}>
+          <Pressable style={({ pressed }) => [styles.card, { borderBottomColor: colors.border }, pressed && { opacity: 0.7 }]} onPress={() => handleEdit(item.id)}>
             <View style={styles.cardInfo}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardDate}>
-                {item.date} ({item.calendarType === 'lunar' ? 'Âm lịch' : 'Dương lịch'})
-                {item.repeatYearly ? ' - Hằng năm' : ''}
+              <Text style={[styles.cardTitle, { fontSize: scale(16), color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.cardDate, { fontSize: scale(14), color: colors.textMuted }]}>
+                {item.date} ({item.calendarType === 'lunar' ? t('reminders.lunar') : t('reminders.solar')})
+                {item.repeatYearly ? ` - ${t('reminders.yearly')}` : ''}
               </Text>
             </View>
             <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
-              <Text style={styles.deleteText}>Xóa</Text>
+              <Text style={[styles.deleteText, { fontSize: scale(14), color: colors.danger }]}>{t('reminders.delete')}</Text>
             </Pressable>
           </Pressable>
         )}
       />
 
-      <Pressable style={[styles.fab, { bottom: insets.bottom + 20 }]} onPress={handleAdd}>
-        <Text style={styles.fabText}>+</Text>
+      <Pressable style={({ pressed }) => [styles.fab, { bottom: insets.bottom + 20, backgroundColor: colors.primary }, pressed && { opacity: 0.8 }]} onPress={handleAdd}>
+        <Text style={[styles.fabText, { fontSize: scale(32) }]}>+</Text>
       </Pressable>
     </View>
   );
@@ -69,56 +72,45 @@ export const RemindersScreen = observer(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   headerTitle: {
-    fontSize: 24,
     fontWeight: 'bold',
   },
   card: {
     flexDirection: 'row',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
     alignItems: 'center',
   },
   cardInfo: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
-  cardDate: {
-    fontSize: 14,
-    color: '#666',
-  },
+  cardDate: {},
   deleteBtn: {
     padding: 8,
   },
   deleteText: {
-    color: 'red',
+    fontWeight: '500',
   },
   empty: {
     padding: 32,
     alignItems: 'center',
   },
-  emptyText: {
-    color: '#999',
-  },
+  emptyText: {},
   fab: {
     position: 'absolute',
     right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
@@ -129,7 +121,6 @@ const styles = StyleSheet.create({
   },
   fabText: {
     color: '#fff',
-    fontSize: 32,
     marginTop: -4,
   }
 });

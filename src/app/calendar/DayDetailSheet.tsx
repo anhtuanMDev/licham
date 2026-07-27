@@ -7,12 +7,15 @@ import { getDayCanChi, getYearCanChi, getConflictingBranch } from '../../core/lu
 import { getEventsForDate } from '../../core/events';
 import { MoonPhase } from '../../components/MoonPhase';
 import { t } from '../../core/i18n/t';
+import { useAppTheme } from '../../core/theme';
+import { observer } from '@legendapp/state/react';
 
 type Props = {
   dateIso: string;
 };
 
-export const DayDetailSheet: React.FC<Props> = ({ dateIso }) => {
+export const DayDetailSheet: React.FC<Props> = observer(({ dateIso }) => {
+  const { colors, scale } = useAppTheme();
   const solarDate = parse(dateIso, 'yyyy-MM-dd', new Date());
   
   // Calculate Lunar data
@@ -28,57 +31,61 @@ export const DayDetailSheet: React.FC<Props> = ({ dateIso }) => {
 
   return (
     <View 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       accessible={true}
       accessibilityRole="summary"
       accessibilityLabel={`${t('calendar.day_detail_title' as any)} ${format(solarDate, 'dd/MM/yyyy')}, ${t('calendar.lunar_date_prefix' as any)} ${lunar.day} ${t('calendar.accessibility.lunar_month' as any)} ${lunar.month}`}
     >
-      <Text style={styles.header} accessibilityRole="header">{t('calendar.day_detail_title' as any)}</Text>
+      <Text style={[styles.header, { fontSize: scale(20), color: colors.text }]} accessibilityRole="header">{t('calendar.day_detail_title' as any)}</Text>
       
       <View style={styles.dateBlock}>
         <MoonPhase lunarDay={lunar.day} size={80} />
-        <Text style={styles.solarLarge} allowFontScaling={true}>{format(solarDate, 'dd/MM/yyyy')}</Text>
-        <Text style={styles.lunarSubtitle} allowFontScaling={true}>
+        <Text style={[styles.solarLarge, { fontSize: scale(32), color: colors.text }]} allowFontScaling={true}>{format(solarDate, 'dd/MM/yyyy')}</Text>
+        <Text style={[styles.lunarSubtitle, { fontSize: scale(16), color: colors.textMuted }]} allowFontScaling={true}>
           {t('calendar.lunar_date_prefix' as any)}: {lunar.day}/{lunar.month}/{lunar.year}
         </Text>
       </View>
       
-      <View style={styles.infoBlock}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>{t('calendar.day_label' as any)}:</Text>
-          <Text style={styles.infoValue}>{dayCanChi.canChi}</Text>
+      <View style={[styles.infoBlock, { backgroundColor: colors.surface }]}>
+        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.infoLabel, { fontSize: scale(16), color: colors.textMuted }]}>{t('calendar.day_label' as any)}:</Text>
+          <Text style={[styles.infoValue, { fontSize: scale(16), color: colors.text }]}>{dayCanChi.canChi}</Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>{t('calendar.year_label' as any)}:</Text>
-          <Text style={styles.infoValue}>{yearCanChi}</Text>
+        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.infoLabel, { fontSize: scale(16), color: colors.textMuted }]}>{t('calendar.year_label' as any)}:</Text>
+          <Text style={[styles.infoValue, { fontSize: scale(16), color: colors.text }]}>{yearCanChi}</Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>{t('calendar.conflict_label' as any)}:</Text>
-          <Text style={styles.infoValue}>{conflictingBranch}</Text>
+        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.infoLabel, { fontSize: scale(16), color: colors.textMuted }]}>{t('calendar.conflict_label' as any)}:</Text>
+          <Text style={[styles.infoValue, { fontSize: scale(16), color: colors.text }]}>{conflictingBranch}</Text>
         </View>
       </View>
       
       {events.length > 0 && (
-        <View style={styles.eventBlock}>
-          <Text style={styles.eventTitle}>{t('event.title' as any)}</Text>
+        <View style={[styles.eventBlock, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.eventTitle, { fontSize: scale(16), color: colors.primary }]}>{t('event.title' as any)}</Text>
           {events.map((eventKey, idx) => (
-            <Text key={idx} style={styles.eventText}>• {t(eventKey)}</Text>
+            <Text key={idx} style={[styles.eventText, { fontSize: scale(15), color: colors.text }]}>• {t(eventKey)}</Text>
           ))}
         </View>
       )}
       
       <Pressable 
-        style={styles.closeBtn} 
+        style={({ pressed }) => [
+          styles.closeBtn,
+          { backgroundColor: colors.surface },
+          pressed && { opacity: 0.8 }
+        ]} 
         onPress={() => overlay.closeModal()}
         accessibilityRole="button"
         accessibilityLabel={t('calendar.close' as any)}
         accessibilityHint={t('calendar.close' as any)}
       >
-        <Text style={styles.closeBtnText} allowFontScaling={true}>{t('calendar.close' as any)}</Text>
+        <Text style={[styles.closeBtnText, { fontSize: scale(16), color: colors.text }]} allowFontScaling={true}>{t('calendar.close' as any)}</Text>
       </Pressable>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -86,7 +93,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
@@ -96,17 +102,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   solarLarge: {
-    fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
   },
   lunarSubtitle: {
-    fontSize: 16,
-    color: '#666',
     marginTop: 4,
   },
   infoBlock: {
-    backgroundColor: '#f5f5f5',
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
@@ -116,35 +117,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
   },
-  infoLabel: {
-    fontSize: 16,
-    color: '#555',
-  },
+  infoLabel: {},
   infoValue: {
-    fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     textTransform: 'capitalize',
   },
   eventBlock: {
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#eee',
   },
   eventTitle: {
-    fontSize: 16,
     fontWeight: 'bold',
-    color: '#007AFF',
     marginBottom: 8,
   },
   eventText: {
-    fontSize: 15,
-    color: '#333',
     lineHeight: 22,
     marginBottom: 4,
   },
@@ -152,11 +141,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#eee',
   },
   closeBtnText: {
-    fontSize: 16,
-    color: '#333',
     fontWeight: '600',
   }
 });

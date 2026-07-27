@@ -5,13 +5,16 @@ import { reminders$, remindersActions } from '../../state/reminders';
 import { notifications } from '../../scheduling/notifications';
 import { format, parse } from 'date-fns';
 import { solarToLunar } from '../../core/lunar/convert';
+import { useAppTheme } from '../../core/theme';
+import { observer } from '@legendapp/state/react';
 
 type Props = {
   existingId?: string;
 };
 
-export const ReminderDetailSheet: React.FC<Props> = ({ existingId }) => {
+export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) => {
   const existing = existingId ? reminders$.get().find(r => r.id === existingId) : null;
+  const { colors, scale } = useAppTheme();
   
   const [title, setTitle] = useState(existing?.title || '');
   const [calendarType, setCalendarType] = useState<'solar' | 'lunar'>(existing?.calendarType || 'lunar');
@@ -46,8 +49,6 @@ export const ReminderDetailSheet: React.FC<Props> = ({ existingId }) => {
 
     await notifications.requestPermission();
 
-    // 1. If input is Lunar: store Lunar date directly
-    // 2. If input is Solar: save converted Lunar date as a Lunar reminder
     const finalCalendarType = 'lunar';
     const finalDate = calendarType === 'solar' ? convertedLunarStr! : dateStr.trim();
 
@@ -73,151 +74,177 @@ export const ReminderDetailSheet: React.FC<Props> = ({ existingId }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>{existingId ? 'Sửa Nhắc Nhở' : 'Thêm Nhắc Nhở'}</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Tiêu đề (VD: Sinh nhật mẹ, Giỗ nội)"
-        value={title}
-        onChangeText={setTitle}
-      />
-      
-      <View style={styles.row}>
-        <Text style={styles.label}>Nhập theo lịch:</Text>
-        <Pressable 
-          style={[styles.chip, calendarType === 'lunar' && styles.chipActive]}
-          onPress={() => setCalendarType('lunar')}>
-          <Text style={[styles.chipText, calendarType === 'lunar' && styles.chipTextActive]}>Âm Lịch</Text>
-        </Pressable>
-        <Pressable 
-          style={[styles.chip, calendarType === 'solar' && styles.chipActive]}
-          onPress={() => setCalendarType('solar')}>
-          <Text style={[styles.chipText, calendarType === 'solar' && styles.chipTextActive]}>Dương Lịch</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.headerRow}>
+        <Text style={[styles.headerTitle, { color: colors.text, fontSize: scale(22) }]}>
+          {existingId ? 'Sửa Nhắc Nhở' : 'Thêm Nhắc Nhở'}
+        </Text>
+        <Pressable hitSlop={15} onPress={() => overlay.closeModal()}>
+          <Text style={[styles.cancelText, { color: colors.textMuted, fontSize: scale(16) }]}>Hủy</Text>
         </Pressable>
       </View>
       
-      <TextInput
-        style={styles.input}
-        placeholder={calendarType === 'solar' ? 'YYYY-MM-DD (VD: 2026-07-25)' : 'DD/MM/YYYY (VD: 12/06/2026)'}
-        value={dateStr}
-        onChangeText={setDateStr}
-      />
+      <View style={styles.inputGroup}>
+        <Text style={[styles.inputLabel, { color: colors.textMuted, fontSize: scale(14) }]}>TIÊU ĐỀ</Text>
+        <View style={[styles.inputWrapper, { backgroundColor: colors.surface }]}>
+          <TextInput
+            style={[styles.input, { color: colors.text, fontSize: scale(17) }]}
+            placeholder="VD: Sinh nhật mẹ, Giỗ nội"
+            placeholderTextColor={colors.textMuted}
+            value={title}
+            onChangeText={setTitle}
+          />
+        </View>
+      </View>
+      
+      <View style={[styles.toggleRow, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.inputLabel, { color: colors.textMuted, fontSize: scale(14) }]}>LOẠI LỊCH</Text>
+        <View style={styles.toggleGroup}>
+          <Pressable 
+            style={[styles.toggleBtn, calendarType === 'lunar' && styles.toggleBtnActive]}
+            onPress={() => setCalendarType('lunar')}
+          >
+            <Text style={[
+              styles.toggleText, 
+              { color: colors.textMuted, fontSize: scale(16) }, 
+              calendarType === 'lunar' && { color: colors.primary, fontWeight: 'bold' }
+            ]}>Âm Lịch</Text>
+          </Pressable>
+          <Text style={{ color: colors.textMuted, marginHorizontal: 8 }}>|</Text>
+          <Pressable 
+            style={[styles.toggleBtn, calendarType === 'solar' && styles.toggleBtnActive]}
+            onPress={() => setCalendarType('solar')}
+          >
+            <Text style={[
+              styles.toggleText, 
+              { color: colors.textMuted, fontSize: scale(16) }, 
+              calendarType === 'solar' && { color: colors.primary, fontWeight: 'bold' }
+            ]}>Dương Lịch</Text>
+          </Pressable>
+        </View>
+      </View>
+      
+      <View style={styles.inputGroup}>
+        <Text style={[styles.inputLabel, { color: colors.textMuted, fontSize: scale(14) }]}>NGÀY</Text>
+        <View style={[styles.inputWrapper, { backgroundColor: colors.surface }]}>
+          <TextInput
+            style={[styles.input, { color: colors.text, fontSize: scale(17) }]}
+            placeholder={calendarType === 'solar' ? 'YYYY-MM-DD (VD: 2026-07-25)' : 'DD/MM/YYYY (VD: 12/06/2026)'}
+            placeholderTextColor={colors.textMuted}
+            value={dateStr}
+            onChangeText={setDateStr}
+          />
+        </View>
+      </View>
 
       {calendarType === 'solar' && (
         <View style={styles.conversionBox}>
-          <Text style={styles.conversionLabel}>Tự động quy đổi sang Âm lịch:</Text>
-          <Text style={styles.conversionValue}>
+          <Text style={[styles.conversionLabel, { color: colors.textMuted, fontSize: scale(14) }]}>Tự động quy đổi sang Âm lịch:</Text>
+          <Text style={[styles.conversionValue, { color: colors.primary, fontSize: scale(16) }]}>
             {convertedLunarStr ? `${convertedLunarStr} (Âm lịch)` : 'Chưa đúng định dạng YYYY-MM-DD'}
           </Text>
         </View>
       )}
       
-      <View style={styles.row}>
-        <Text style={styles.label}>Lặp lại hằng năm</Text>
-        <Switch value={repeatYearly} onValueChange={setRepeatYearly} />
+      <View style={[styles.switchRow, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.inputLabel, { color: colors.text, fontSize: scale(16), marginBottom: 0 }]}>Lặp lại hằng năm</Text>
+        <Switch value={repeatYearly} onValueChange={setRepeatYearly} trackColor={{ true: colors.primary }} />
       </View>
       
-      <View style={styles.actions}>
-        <Pressable style={[styles.btn, styles.btnCancel]} onPress={() => overlay.closeModal()}>
-          <Text style={styles.btnTextCancel}>Hủy</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, styles.btnSave]} onPress={handleSave}>
-          <Text style={styles.btnTextSave}>
-            {calendarType === 'solar' ? 'Xác nhận & Lưu Âm Lịch' : 'Lưu'}
-          </Text>
-        </Pressable>
-      </View>
+      <Pressable 
+        style={({ pressed }) => [
+          styles.saveBtn, 
+          { backgroundColor: colors.primary }, 
+          pressed && { opacity: 0.8 }
+        ]} 
+        onPress={handleSave}
+      >
+        <Text style={[styles.saveBtnText, { fontSize: scale(17) }]}>
+          {calendarType === 'solar' ? 'Xác nhận & Lưu' : 'Lưu Nhắc Nhở'}
+        </Text>
+      </Pressable>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
     padding: 24,
     paddingBottom: 40,
   },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  headerTitle: {
+    fontWeight: '700',
+  },
+  cancelText: {
+    fontWeight: '500',
+  },
+  inputGroup: {
     marginBottom: 24,
   },
+  inputLabel: {
+    fontWeight: '600',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  inputWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  toggleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleBtn: {
+    paddingVertical: 4,
+  },
+  toggleBtnActive: {},
+  toggleText: {
+    fontWeight: '500',
   },
   conversionBox: {
-    backgroundColor: '#e8f0fe',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    marginTop: -8,
+    marginBottom: 24,
+    paddingLeft: 16,
   },
   conversionLabel: {
-    fontSize: 13,
-    color: '#555',
     marginBottom: 4,
   },
   conversionValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontWeight: '600',
   },
-  row: {
+  switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    marginBottom: 32,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  label: {
-    fontSize: 16,
-    flex: 1,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  saveBtn: {
+    paddingVertical: 16,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginLeft: 8,
-  },
-  chipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  chipText: {
-    color: '#666',
-  },
-  chipTextActive: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  actions: {
-    flexDirection: 'row',
-    marginTop: 24,
-    gap: 12,
-  },
-  btn: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 8,
     alignItems: 'center',
   },
-  btnCancel: {
-    backgroundColor: '#f5f5f5',
-  },
-  btnSave: {
-    backgroundColor: '#007AFF',
-  },
-  btnTextCancel: {
-    fontSize: 16,
-    color: '#666',
-  },
-  btnTextSave: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: 'bold',
+  saveBtnText: {
+    color: '#ffffff',
+    fontWeight: '600',
   }
 });

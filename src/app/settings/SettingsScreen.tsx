@@ -1,160 +1,256 @@
 import React from 'react';
-import { View, Text, StyleSheet, Switch, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Switch, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from '@legendapp/state/react';
 import { settings$ } from '../../state/settings';
 import { t } from '../../core/i18n/t';
-
 import { iapManager } from '../../core/iap/iapManager';
+import { useAppTheme } from '../../core/theme';
+import { overlay } from '../../overlay/overlay';
 
 export const SettingsScreen = observer(() => {
   const insets = useSafeAreaInsets();
   const settings = settings$.get();
-  
-  const toggleLocale = () => {
-    settings$.locale.set(settings.locale === 'vi' ? 'en' : 'vi');
-  };
+  const { colors, scale, isDark } = useAppTheme();
 
   const toggleNotifications = () => {
     settings$.notificationsEnabled.set(!settings.notificationsEnabled);
   };
 
-  const handleRestore = () => {
-    iapManager.restorePurchases();
+  const toggleLocale = () => {
+    const next = settings.locale === 'vi' ? 'en' : 'vi';
+    settings$.locale.set(next);
+  };
+
+  const handleRestore = async () => {
+    overlay.showToast('Đang khôi phục...');
+    await iapManager.verifyPurchases();
   };
 
   const cycleTheme = () => {
-    const themes: Array<'light' | 'dark' | 'high-contrast'> = ['light', 'dark', 'high-contrast'];
-    const currentIndex = themes.indexOf(settings.theme);
-    settings$.theme.set(themes[(currentIndex + 1) % themes.length]);
+    const themes = ['light', 'dark', 'high-contrast'] as const;
+    const currentIdx = themes.indexOf(settings.theme);
+    settings$.theme.set(themes[(currentIdx + 1) % themes.length]);
   };
 
   const cycleFontScale = () => {
-    const scales = [0.8, 1.0, 1.2];
-    const currentIndex = scales.indexOf(settings.fontScale) >= 0 ? scales.indexOf(settings.fontScale) : 1;
-    settings$.fontScale.set(scales[(currentIndex + 1) % scales.length]);
+    const scales = [0.8, 1, 1.2];
+    const currentIdx = scales.indexOf(settings.fontScale);
+    settings$.fontScale.set(scales[(currentIdx + 1) % scales.length]);
+  };
+
+  const renderPremiumBlock = () => {
+    if (settings.isPremium) {
+      return (
+        <View style={[styles.premiumCard, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.premiumCardTitle, { fontSize: scale(20) }]}>
+            {t('settings.premium.member' as any)}
+          </Text>
+          <Text style={[styles.premiumCardDesc, { fontSize: scale(15) }]}>
+            {t('settings.premium.thanks' as any)}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.premiumCard, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
+        <Text style={[styles.premiumCardTitle, { fontSize: scale(20), color: colors.text }]}>
+          {t('settings.premium.upgrade' as any)}
+        </Text>
+        <Text style={[styles.premiumCardDesc, { fontSize: scale(15), color: colors.textMuted }]}>
+          {t('settings.premium.desc' as any)}
+        </Text>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.premiumBtn,
+            { backgroundColor: colors.primary },
+            pressed && { opacity: 0.8 }
+          ]}
+          onPress={() => iapManager.buyPremium()}
+        >
+          <Text style={[styles.premiumBtnText, { fontSize: scale(16) }]}>
+            {t('settings.premium.buy' as any)}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  // Helper to render the common row structure
+  const renderRow = (
+    label: string,
+    valueElement: React.ReactNode,
+    onPress?: () => void,
+    isLast: boolean = false
+  ) => {
+    const content = (
+      <View style={styles.rowInner}>
+        <Text style={[styles.rowLabel, { fontSize: scale(17), color: colors.text }]}>{label}</Text>
+        <View style={styles.rowValueContainer}>
+          {valueElement}
+        </View>
+      </View>
+    );
+
+    const containerStyle = [
+      styles.rowContainer,
+      { backgroundColor: colors.surface },
+      !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }
+    ];
+
+    if (onPress) {
+      return (
+        <Pressable style={({ pressed }) => [containerStyle, pressed && { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }]} onPress={onPress}>
+          {content}
+        </Pressable>
+      );
+    }
+    return <View style={containerStyle}>{content}</View>;
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.header}>{t('settings.title')}</Text>
-      
-      <View style={styles.row}>
-        <Text style={styles.label}>{t('settings.language')}</Text>
-        <Text style={styles.value} onPress={toggleLocale}>
-          {settings.locale.toUpperCase()}
-        </Text>
-      </View>
-      
-      <View style={styles.row}>
-        <Text style={styles.label}>{t('settings.notifications')}</Text>
-        <Switch 
-          value={settings.notificationsEnabled} 
-          onValueChange={toggleNotifications} 
-        />
-      </View>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={{ paddingTop: insets.top + 10, paddingBottom: 40 }}
+    >
+      <Text style={[styles.header, { fontSize: scale(32), color: colors.text }]}>
+        {t('settings.title')}
+      </Text>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Giao diện (Theme)</Text>
-        <Pressable hitSlop={10} onPress={cycleTheme} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-          <Text style={styles.value}>
-            {settings.theme === 'light' ? 'SÁNG' : settings.theme === 'dark' ? 'TỐI' : 'TƯƠNG PHẢN CAO'}
-          </Text>
-        </Pressable>
-      </View>
+      {renderPremiumBlock()}
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Cỡ chữ (Font Size)</Text>
-        <Pressable hitSlop={10} onPress={cycleFontScale} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-          <Text style={styles.value}>
-            {settings.fontScale === 0.8 ? 'NHỎ' : settings.fontScale === 1.2 ? 'LỚN' : 'BÌNH THƯỜNG'}
-          </Text>
-        </Pressable>
-      </View>
-
-      <Pressable style={styles.row} onPress={handleRestore}>
-        <Text style={styles.label}>Khôi phục mua hàng (Restore Purchases)</Text>
-        <Text style={styles.value}>›</Text>
-      </Pressable>
-      
-      <View style={styles.premiumBlock}>
-        <Text style={styles.premiumTitle}>
-          {settings.isPremium ? t('settings.premium.member') : t('settings.premium.upgrade')}
-        </Text>
-        <Text style={styles.premiumDesc}>
-          {settings.isPremium 
-            ? t('settings.premium.thanks') 
-            : t('settings.premium.desc')}
-        </Text>
-        {!settings.isPremium && (
-          <Pressable 
-            style={styles.premiumBtn}
-            onPress={() => iapManager.buyPremium()}
-          >
-            <Text style={styles.premiumBtnText}>{t('settings.premium.buy')}</Text>
-          </Pressable>
+      <Text style={[styles.sectionHeader, { fontSize: scale(13), color: colors.textMuted }]}>
+        {t('settings.general')}
+      </Text>
+      <View style={[styles.sectionBlock, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+        {renderRow(
+          t('settings.language'),
+          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+            {settings.locale === 'vi' ? 'Tiếng Việt' : 'English'}
+          </Text>,
+          toggleLocale
+        )}
+        {renderRow(
+          t('settings.notifications'),
+          <Switch
+            value={settings.notificationsEnabled}
+            onValueChange={toggleNotifications}
+            trackColor={{ true: colors.primary }}
+          />,
+          undefined,
+          true
         )}
       </View>
-    </View>
+
+      <Text style={[styles.sectionHeader, { fontSize: scale(13), color: colors.textMuted }]}>
+        {t('settings.appearance')}
+      </Text>
+      <View style={[styles.sectionBlock, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+        {renderRow(
+          t('settings.theme'),
+          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+            {settings.theme === 'light' ? 'Sáng' : settings.theme === 'dark' ? 'Tối' : 'Tương phản cao'}
+          </Text>,
+          cycleTheme
+        )}
+        {renderRow(
+          t('settings.fontSize'),
+          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+            {settings.fontScale === 0.8 ? 'Nhỏ' : settings.fontScale === 1.2 ? 'Lớn' : 'Bình thường'}
+          </Text>,
+          cycleFontScale,
+          true
+        )}
+      </View>
+
+      <Text style={[styles.sectionHeader, { fontSize: scale(13), color: colors.textMuted }]}>
+        {t('settings.purchases')}
+      </Text>
+      <View style={[styles.sectionBlock, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+        {renderRow(
+          t('settings.restorePurchases'),
+          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+            {t('settings.restore')}
+          </Text>,
+          handleRestore,
+          true
+        )}
+      </View>
+    </ScrollView>
   );
 });
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
   },
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  label: {
-    fontSize: 16,
-  },
-  value: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  premiumBlock: {
-    marginTop: 32,
-    padding: 16,
-    backgroundColor: '#fff9e6',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ffe066',
-  },
-  premiumTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#b38600',
-    marginBottom: 8,
-  },
-  premiumDesc: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    fontWeight: '700',
+    paddingHorizontal: 8,
     marginBottom: 16,
   },
+  premiumCard: {
+    marginHorizontal: 8,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  premiumCardTitle: {
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  premiumCardDesc: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
   premiumBtn: {
-    backgroundColor: '#ffc107',
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
   },
   premiumBtnText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  sectionHeader: {
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginLeft: 8,
+    marginBottom: 6,
+    marginTop: 16,
+  },
+  sectionBlock: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowContainer: {
+    paddingLeft: 8,
+  },
+  rowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingRight: 8,
+  },
+  rowLabel: {
+    fontWeight: '400',
+    flex: 1,
+  },
+  rowValueContainer: {
+    flexShrink: 0,
+    paddingLeft: 16,
+  },
+  rowValueText: {
+    fontWeight: '500',
   }
 });

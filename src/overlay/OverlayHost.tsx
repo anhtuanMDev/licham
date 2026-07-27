@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { observer } from '@legendapp/state/react';
 import { ui$ } from '../state/ui';
 import { overlay } from './overlay';
+import { useAppTheme } from '../core/theme';
 
 import { ReminderDetailSheet } from '../app/reminders/ReminderDetailSheet';
 import { GoodDayFinderModal } from '../app/calendar/GoodDayFinderModal';
@@ -13,6 +14,7 @@ import { MonthYearPickerModal } from '../app/calendar/MonthYearPicker';
 
 export const OverlayHost = observer(() => {
   const currentModal = ui$.modal.get();
+  const { colors } = useAppTheme();
   
   if (!currentModal) return null;
   
@@ -43,7 +45,7 @@ export const OverlayHost = observer(() => {
     <Modal visible={true} transparent={true} animationType="fade">
       <View style={[styles.backdrop, isCentered && styles.backdropCentered]}>
         <Pressable style={styles.backdropPressable} onPress={overlay.closeModal} />
-        <View style={[styles.modalContent, isCentered && styles.modalContentCentered]}>
+        <View style={[styles.modalContent, { backgroundColor: colors.background }, isCentered && styles.modalContentCentered]}>
           {content}
         </View>
       </View>
@@ -61,7 +63,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 16,
