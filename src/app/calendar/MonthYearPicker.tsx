@@ -5,8 +5,13 @@ import { overlay } from '../../overlay/overlay';
 import { calendar$ } from '../../state/calendar';
 import { t } from '../../core/i18n/t';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { useAppTheme } from '../../core/theme';
+import { useMemo } from 'react';
 
 export const MonthYearPickerModal = observer(() => {
+  const { colors, scale } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors, scale), [colors, scale]);
+  
   const current = calendar$.visibleMonth.get();
   const [selectedYear, setSelectedYear] = useState(current.year);
   const [selectedMonth, setSelectedMonth] = useState(current.month);
@@ -33,13 +38,13 @@ export const MonthYearPickerModal = observer(() => {
       {/* Year Selector */}
       <View style={styles.yearSelector}>
         <Pressable style={styles.yearBtn} onPress={handlePrevYear} hitSlop={10}>
-          <ChevronLeft color="#007AFF" size={24} />
+          <ChevronLeft color={colors.primary} size={24} />
         </Pressable>
         
         <Text style={styles.yearText}>{selectedYear}</Text>
         
         <Pressable style={styles.yearBtn} onPress={handleNextYear} hitSlop={10}>
-          <ChevronRight color="#007AFF" size={24} />
+          <ChevronRight color={colors.primary} size={24} />
         </Pressable>
       </View>
 
@@ -76,17 +81,18 @@ export const MonthYearPickerModal = observer(() => {
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, scale: (size: number) => number) => StyleSheet.create({
   container: {
     paddingBottom: 8,
     paddingTop: 12,
+    backgroundColor: colors.background,
   },
   title: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: '600',
     marginBottom: 16,
     textAlign: 'center',
-    color: '#333',
+    color: colors.text,
   },
   yearSelector: {
     flexDirection: 'row',
@@ -99,9 +105,9 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   yearText: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: '600',
-    color: '#111',
+    color: colors.text,
     marginHorizontal: 24,
     width: 60,
     textAlign: 'center',
@@ -121,11 +127,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   monthItemSelected: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
   },
   monthText: {
-    fontSize: 15,
-    color: '#555',
+    fontSize: scale(15),
+    color: colors.textMuted,
     fontWeight: '400',
   },
   monthTextSelected: {
@@ -149,8 +155,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textBtnLabel: {
-    fontSize: 15,
+    fontSize: scale(15),
     fontWeight: '600',
-    color: '#007AFF',
+    color: colors.primary,
   }
 });

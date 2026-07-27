@@ -7,6 +7,7 @@ import { format, parse } from 'date-fns';
 import { solarToLunar } from '../../core/lunar/convert';
 import { useAppTheme } from '../../core/theme';
 import { observer } from '@legendapp/state/react';
+import { useMemo } from 'react';
 
 type Props = {
   existingId?: string;
@@ -15,9 +16,10 @@ type Props = {
 export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) => {
   const existing = existingId ? reminders$.get().find(r => r.id === existingId) : null;
   const { colors, scale } = useAppTheme();
-  
+
   const [title, setTitle] = useState(existing?.title || '');
   const [calendarType, setCalendarType] = useState<'solar' | 'lunar'>(existing?.calendarType || 'lunar');
+  const styles = useMemo(() => createStyles(colors, scale, calendarType), [colors, scale, calendarType]);
   const getInitialDateStr = () => {
     if (existing) {
       if (existing.calendarType === 'solar') {
@@ -35,7 +37,7 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
   // Compute converted lunar date preview when calendarType === 'solar'
   let convertedLunarStr: string | null = null;
   let finalSolarDbStr: string | null = null;
-  
+
   if (calendarType === 'solar' && dateStr.trim()) {
     try {
       const parsedDate = parse(dateStr.trim(), 'dd/MM/yyyy', new Date());
@@ -60,7 +62,7 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
       overlay.showToast('Ngày Dương lịch không hợp lệ (Định dạng: DD/MM/YYYY)', { type: 'error' });
       return;
     }
-    
+
     // For lunar, we could add basic validation but trusting DD/MM/YYYY format for now
     if (calendarType === 'lunar' && dateStr.trim().split('/').length !== 3) {
       overlay.showToast('Ngày Âm lịch không hợp lệ (Định dạng: DD/MM/YYYY)', { type: 'error' });
@@ -88,26 +90,26 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
       });
       overlay.showToast('Đã thêm nhắc nhở');
     }
-    
+
     overlay.closeModal();
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={[styles.headerTitle, { color: colors.text, fontSize: scale(22) }]}>
+        <Text style={styles.headerTitle}>
           {existingId ? 'Sửa Nhắc Nhở' : 'Thêm Nhắc Nhở'}
         </Text>
         <Pressable hitSlop={15} onPress={() => overlay.closeModal()}>
-          <Text style={[styles.cancelText, { color: colors.textMuted, fontSize: scale(16) }]}>Hủy</Text>
+          <Text style={styles.cancelText}>Hủy</Text>
         </Pressable>
       </View>
-      
+
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.textMuted, fontSize: scale(14) }]}>TIÊU ĐỀ</Text>
-        <View style={[styles.inputWrapper, { backgroundColor: colors.surface }]}>
+        <Text style={styles.inputLabelBase}>TIÊU ĐỀ</Text>
+        <View style={styles.inputWrapper}>
           <TextInput
-            style={[styles.input, { color: colors.text, fontSize: scale(17) }]}
+            style={styles.input}
             placeholder="VD: Sinh nhật mẹ, Giỗ nội"
             placeholderTextColor={colors.textMuted}
             value={title}
@@ -115,39 +117,35 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
           />
         </View>
       </View>
-      
-      <View style={[styles.toggleRow, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.inputLabel, { color: colors.textMuted, fontSize: scale(14) }]}>LOẠI LỊCH</Text>
+
+      <View style={styles.toggleRow}>
+        <Text style={styles.inputLabelBase}>LOẠI LỊCH</Text>
         <View style={styles.toggleGroup}>
-          <Pressable 
-            style={[styles.toggleBtn, calendarType === 'lunar' && styles.toggleBtnActive]}
+          <Pressable
+            style={styles.toggleBtn}
             onPress={() => setCalendarType('lunar')}
           >
-            <Text style={[
-              styles.toggleText, 
-              { color: colors.textMuted, fontSize: scale(16) }, 
-              calendarType === 'lunar' && { color: colors.primary, fontWeight: 'bold' }
-            ]}>Âm Lịch</Text>
+            <Text style={calendarType === 'lunar' ? styles.toggleTextActive : styles.toggleText}>
+              Âm Lịch
+            </Text>
           </Pressable>
-          <Text style={{ color: colors.textMuted, marginHorizontal: 8 }}>|</Text>
-          <Pressable 
-            style={[styles.toggleBtn, calendarType === 'solar' && styles.toggleBtnActive]}
+          <Text style={styles.toggleDivider}>|</Text>
+          <Pressable
+            style={styles.toggleBtn}
             onPress={() => setCalendarType('solar')}
           >
-            <Text style={[
-              styles.toggleText, 
-              { color: colors.textMuted, fontSize: scale(16) }, 
-              calendarType === 'solar' && { color: colors.primary, fontWeight: 'bold' }
-            ]}>Dương Lịch</Text>
+            <Text style={calendarType === 'solar' ? styles.toggleTextActive : styles.toggleText}>
+              Dương Lịch
+            </Text>
           </Pressable>
         </View>
       </View>
-      
+
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.textMuted, fontSize: scale(14) }]}>NGÀY</Text>
-        <View style={[styles.inputWrapper, { backgroundColor: colors.surface }]}>
+        <Text style={styles.inputLabelBase}>NGÀY</Text>
+        <View style={styles.inputWrapper}>
           <TextInput
-            style={[styles.input, { color: colors.text, fontSize: scale(17) }]}
+            style={styles.input}
             placeholder="DD/MM/YYYY (VD: 25/07/2026)"
             placeholderTextColor={colors.textMuted}
             value={dateStr}
@@ -158,27 +156,26 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
 
       {calendarType === 'solar' && (
         <View style={styles.conversionBox}>
-          <Text style={[styles.conversionLabel, { color: colors.textMuted, fontSize: scale(14) }]}>Tự động quy đổi sang Âm lịch:</Text>
-          <Text style={[styles.conversionValue, { color: colors.primary, fontSize: scale(16) }]}>
+          <Text style={styles.conversionLabel}>Tự động quy đổi sang Âm lịch:</Text>
+          <Text style={styles.conversionValue}>
             {convertedLunarStr ? `${convertedLunarStr} (Âm lịch)` : 'Chưa đúng định dạng DD/MM/YYYY'}
           </Text>
         </View>
       )}
-      
-      <View style={[styles.switchRow, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.inputLabel, { color: colors.text, fontSize: scale(16), marginBottom: 0 }]}>Lặp lại hằng năm</Text>
+
+      <View style={styles.switchRow}>
+        <Text style={styles.switchLabel}>Lặp lại hằng năm</Text>
         <Switch value={repeatYearly} onValueChange={setRepeatYearly} trackColor={{ true: colors.primary }} />
       </View>
-      
-      <Pressable 
+
+      <Pressable
         style={({ pressed }) => [
-          styles.saveBtn, 
-          { backgroundColor: colors.primary }, 
+          styles.saveBtn,
           pressed && { opacity: 0.8 }
-        ]} 
+        ]}
         onPress={handleSave}
       >
-        <Text style={[styles.saveBtnText, { fontSize: scale(17) }]}>
+        <Text style={styles.saveBtnText}>
           {calendarType === 'solar' ? 'Xác nhận & Lưu' : 'Lưu Nhắc Nhở'}
         </Text>
       </Pressable>
@@ -186,10 +183,11 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, scale: (size: number) => number, calendarType: string) => StyleSheet.create({
   container: {
     padding: 24,
     paddingBottom: 40,
+    backgroundColor: colors.background,
   },
   headerRow: {
     flexDirection: 'row',
@@ -199,25 +197,34 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: '700',
+    color: colors.text,
+    fontSize: scale(22),
   },
   cancelText: {
     fontWeight: '500',
+    color: colors.textMuted,
+    fontSize: scale(16),
   },
   inputGroup: {
     marginBottom: 24,
   },
-  inputLabel: {
+  inputLabelBase: {
     fontWeight: '600',
     marginBottom: 8,
     letterSpacing: 0.5,
+    color: colors.textMuted,
+    fontSize: scale(14),
   },
   inputWrapper: {
     borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
   input: {
     paddingHorizontal: 16,
     paddingVertical: 14,
+    color: colors.text,
+    fontSize: scale(17),
   },
   toggleRow: {
     flexDirection: 'row',
@@ -226,6 +233,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   toggleGroup: {
     flexDirection: 'row',
@@ -234,9 +242,19 @@ const styles = StyleSheet.create({
   toggleBtn: {
     paddingVertical: 4,
   },
-  toggleBtnActive: {},
   toggleText: {
     fontWeight: '500',
+    color: colors.textMuted,
+    fontSize: scale(16),
+  },
+  toggleTextActive: {
+    fontWeight: 'bold',
+    color: colors.primary,
+    fontSize: scale(16),
+  },
+  toggleDivider: {
+    color: colors.textMuted,
+    marginHorizontal: 8,
   },
   conversionBox: {
     marginTop: -8,
@@ -245,9 +263,13 @@ const styles = StyleSheet.create({
   },
   conversionLabel: {
     marginBottom: 4,
+    color: colors.textMuted,
+    fontSize: scale(14),
   },
   conversionValue: {
     fontWeight: '600',
+    color: colors.primary,
+    fontSize: scale(16),
   },
   switchRow: {
     flexDirection: 'row',
@@ -256,14 +278,22 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  switchLabel: {
+    fontWeight: '600',
+    color: colors.text,
+    fontSize: scale(16),
   },
   saveBtn: {
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
+    backgroundColor: colors.primary,
   },
   saveBtnText: {
     color: '#ffffff',
     fontWeight: '600',
+    fontSize: scale(17),
   }
 });

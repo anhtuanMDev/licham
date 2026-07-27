@@ -3,8 +3,13 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { overlay } from '../../overlay/overlay';
 import { findGoodDays, GoodDayResult } from '../../core/lunar/hoangDao';
 import { format } from 'date-fns';
+import { useAppTheme } from '../../core/theme';
+import { useMemo } from 'react';
 
 export const GoodDayFinderModal: React.FC = () => {
+  const { colors, scale } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors, scale), [colors, scale]);
+  
   const [results, setResults] = useState<GoodDayResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [purpose, setPurpose] = useState<'any' | 'wedding' | 'moving'>('any');
@@ -75,16 +80,18 @@ export const GoodDayFinderModal: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, scale: (size: number) => number) => StyleSheet.create({
   container: {
     padding: 24,
     paddingBottom: 40,
-    maxHeight: '80%', // limit height if many results
+    maxHeight: '80%',
+    backgroundColor: colors.background,
   },
   header: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
     marginBottom: 20,
+    color: colors.text,
   },
   row: {
     flexDirection: 'row',
@@ -92,8 +99,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: scale(16),
     marginRight: 12,
+    color: colors.text,
   },
   chipScroll: {
     flexGrow: 0,
@@ -103,22 +111,23 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     marginRight: 8,
   },
   chipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
-    color: '#666',
+    color: colors.textMuted,
+    fontSize: scale(14),
   },
   chipTextActive: {
     color: '#fff',
     fontWeight: 'bold',
   },
   searchBtn: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -126,25 +135,26 @@ const styles = StyleSheet.create({
   },
   searchBtnText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   resultsContainer: {
     flex: 1,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.border,
     paddingTop: 16,
     marginBottom: 16,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#999',
+    color: colors.textMuted,
     fontStyle: 'italic',
+    fontSize: scale(14),
   },
   resultCard: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     marginBottom: 8,
     alignItems: 'center',
@@ -153,12 +163,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   solarText: {
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: '600',
+    color: colors.text,
   },
   lunarText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: scale(14),
+    color: colors.textMuted,
     marginTop: 2,
   },
   resultRight: {
@@ -166,8 +177,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   reasonText: {
-    fontSize: 13,
-    color: '#4caf50', // green for good day
+    fontSize: scale(13),
+    color: '#4caf50',
     fontWeight: '500',
     textAlign: 'right',
   },
@@ -175,10 +186,10 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.surface,
   },
   closeBtnText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: scale(16),
+    color: colors.text,
   }
 });

@@ -7,11 +7,13 @@ import { t } from '../../core/i18n/t';
 import { iapManager } from '../../core/iap/iapManager';
 import { useAppTheme } from '../../core/theme';
 import { overlay } from '../../overlay/overlay';
+import { useMemo } from 'react';
 
 export const SettingsScreen = observer(() => {
   const insets = useSafeAreaInsets();
   const settings = settings$.get();
   const { colors, scale, isDark } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors, scale, isDark, insets), [colors, scale, isDark, insets]);
 
   const toggleNotifications = () => {
     settings$.notificationsEnabled.set(!settings.notificationsEnabled);
@@ -42,11 +44,11 @@ export const SettingsScreen = observer(() => {
   const renderPremiumBlock = () => {
     if (settings.isPremium) {
       return (
-        <View style={[styles.premiumCard, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.premiumCardTitle, { fontSize: scale(20) }]}>
+        <View style={styles.premiumCardActive}>
+          <Text style={styles.premiumCardTitleActive}>
             {t('settings.premium.member' as any)}
           </Text>
-          <Text style={[styles.premiumCardDesc, { fontSize: scale(15) }]}>
+          <Text style={styles.premiumCardDescActive}>
             {t('settings.premium.thanks' as any)}
           </Text>
         </View>
@@ -54,23 +56,22 @@ export const SettingsScreen = observer(() => {
     }
 
     return (
-      <View style={[styles.premiumCard, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
-        <Text style={[styles.premiumCardTitle, { fontSize: scale(20), color: colors.text }]}>
+      <View style={styles.premiumCardInactive}>
+        <Text style={styles.premiumCardTitleInactive}>
           {t('settings.premium.upgrade' as any)}
         </Text>
-        <Text style={[styles.premiumCardDesc, { fontSize: scale(15), color: colors.textMuted }]}>
+        <Text style={styles.premiumCardDescInactive}>
           {t('settings.premium.desc' as any)}
         </Text>
 
         <Pressable
           style={({ pressed }) => [
             styles.premiumBtn,
-            { backgroundColor: colors.primary },
             pressed && { opacity: 0.8 }
           ]}
           onPress={() => iapManager.buyPremium()}
         >
-          <Text style={[styles.premiumBtnText, { fontSize: scale(16) }]}>
+          <Text style={styles.premiumBtnText}>
             {t('settings.premium.buy' as any)}
           </Text>
         </Pressable>
@@ -87,7 +88,7 @@ export const SettingsScreen = observer(() => {
   ) => {
     const content = (
       <View style={styles.rowInner}>
-        <Text style={[styles.rowLabel, { fontSize: scale(17), color: colors.text }]}>{label}</Text>
+        <Text style={styles.rowLabel}>{label}</Text>
         <View style={styles.rowValueContainer}>
           {valueElement}
         </View>
@@ -96,13 +97,12 @@ export const SettingsScreen = observer(() => {
 
     const containerStyle = [
       styles.rowContainer,
-      { backgroundColor: colors.surface },
-      !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }
+      !isLast && styles.rowContainerNotLast
     ];
 
     if (onPress) {
       return (
-        <Pressable style={({ pressed }) => [containerStyle, pressed && { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }]} onPress={onPress}>
+        <Pressable style={({ pressed }) => [containerStyle, pressed && styles.rowContainerPressed]} onPress={onPress}>
           {content}
         </Pressable>
       );
@@ -112,22 +112,22 @@ export const SettingsScreen = observer(() => {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingTop: insets.top + 10, paddingBottom: 40 }}
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
     >
-      <Text style={[styles.header, { fontSize: scale(32), color: colors.text }]}>
+      <Text style={styles.header}>
         {t('settings.title')}
       </Text>
 
       {renderPremiumBlock()}
 
-      <Text style={[styles.sectionHeader, { fontSize: scale(13), color: colors.textMuted }]}>
+      <Text style={styles.sectionHeader}>
         {t('settings.general')}
       </Text>
-      <View style={[styles.sectionBlock, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+      <View style={styles.sectionBlock}>
         {renderRow(
           t('settings.language'),
-          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+          <Text style={styles.rowValueText}>
             {settings.locale === 'vi' ? 'Tiếng Việt' : 'English'}
           </Text>,
           toggleLocale
@@ -144,20 +144,20 @@ export const SettingsScreen = observer(() => {
         )}
       </View>
 
-      <Text style={[styles.sectionHeader, { fontSize: scale(13), color: colors.textMuted }]}>
+      <Text style={styles.sectionHeader}>
         {t('settings.appearance')}
       </Text>
-      <View style={[styles.sectionBlock, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+      <View style={styles.sectionBlock}>
         {renderRow(
           t('settings.theme'),
-          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+          <Text style={styles.rowValueText}>
             {settings.theme === 'light' ? 'Sáng' : settings.theme === 'dark' ? 'Tối' : 'Tương phản cao'}
           </Text>,
           cycleTheme
         )}
         {renderRow(
           t('settings.fontSize'),
-          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+          <Text style={styles.rowValueText}>
             {settings.fontScale === 0.8 ? 'Nhỏ' : settings.fontScale === 1.2 ? 'Lớn' : 'Bình thường'}
           </Text>,
           cycleFontScale,
@@ -165,13 +165,13 @@ export const SettingsScreen = observer(() => {
         )}
       </View>
 
-      <Text style={[styles.sectionHeader, { fontSize: scale(13), color: colors.textMuted }]}>
+      <Text style={styles.sectionHeader}>
         {t('settings.purchases')}
       </Text>
-      <View style={[styles.sectionBlock, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+      <View style={styles.sectionBlock}>
         {renderRow(
           t('settings.restorePurchases'),
-          <Text style={[styles.rowValueText, { fontSize: scale(17), color: colors.primary }]}>
+          <Text style={styles.rowValueText}>
             {t('settings.restore')}
           </Text>,
           handleRestore,
@@ -182,16 +182,23 @@ export const SettingsScreen = observer(() => {
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, scale: (size: number) => number, isDark: boolean, insets: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    paddingTop: insets.top + 10,
+    paddingBottom: 40,
   },
   header: {
     fontWeight: '700',
     paddingHorizontal: 8,
     marginBottom: 16,
+    fontSize: scale(32),
+    color: colors.text,
   },
-  premiumCard: {
+  premiumCardActive: {
     marginHorizontal: 8,
     marginBottom: 16,
     borderRadius: 16,
@@ -201,25 +208,56 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
+    backgroundColor: colors.primary,
   },
-  premiumCardTitle: {
+  premiumCardInactive: {
+    marginHorizontal: 8,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  premiumCardTitleActive: {
     fontWeight: '700',
     color: '#ffffff',
     marginBottom: 8,
+    fontSize: scale(20),
   },
-  premiumCardDesc: {
+  premiumCardTitleInactive: {
+    fontWeight: '700',
+    marginBottom: 8,
+    fontSize: scale(20),
+    color: colors.text,
+  },
+  premiumCardDescActive: {
     color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 22,
     marginBottom: 20,
+    fontSize: scale(15),
+  },
+  premiumCardDescInactive: {
+    lineHeight: 22,
+    marginBottom: 20,
+    fontSize: scale(15),
+    color: colors.textMuted,
   },
   premiumBtn: {
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+    backgroundColor: colors.primary,
   },
   premiumBtnText: {
     color: '#ffffff',
     fontWeight: '600',
+    fontSize: scale(16),
   },
   sectionHeader: {
     fontWeight: '600',
@@ -227,13 +265,25 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginBottom: 6,
     marginTop: 16,
+    fontSize: scale(13),
+    color: colors.textMuted,
   },
   sectionBlock: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    borderBottomColor: colors.border,
   },
   rowContainer: {
     paddingLeft: 8,
+    backgroundColor: colors.surface,
+  },
+  rowContainerNotLast: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  rowContainerPressed: {
+    backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0',
   },
   rowInner: {
     flexDirection: 'row',
@@ -245,6 +295,8 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontWeight: '400',
     flex: 1,
+    fontSize: scale(17),
+    color: colors.text,
   },
   rowValueContainer: {
     flexShrink: 0,
@@ -252,5 +304,7 @@ const styles = StyleSheet.create({
   },
   rowValueText: {
     fontWeight: '500',
+    fontSize: scale(17),
+    color: colors.primary,
   }
 });

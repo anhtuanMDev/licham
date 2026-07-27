@@ -26,17 +26,18 @@ type UnifiedEvent = {
 export const RemindersScreen = observer(() => {
   const insets = useSafeAreaInsets();
   const { colors, scale } = useAppTheme();
-  
+
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+  const styles = useMemo(() => createStyles(colors, scale, insets, activeTab), [colors, scale, insets, activeTab]);
   const reminders = reminders$.get();
-  
+
   const currentYear = new Date().getFullYear();
   const today = startOfDay(new Date());
 
   // Aggregate all events for the current year
   const unifiedEvents = useMemo(() => {
     const events: UnifiedEvent[] = [];
-    
+
     // 1. Predefined Events (Holidays)
     const predefined = getAllPredefinedEventsForYear(currentYear);
     for (const p of predefined) {
@@ -48,12 +49,12 @@ export const RemindersScreen = observer(() => {
         lunarDate: p.lunarDate,
       });
     }
-    
+
     // 2. Custom User Reminders
     for (const r of reminders) {
       let eventSolarDate: Date | null = null;
       let eventLunarDate: LunarDate | null = null;
-      
+
       if (r.calendarType === 'solar') {
         const parsed = parse(r.date, 'yyyy-MM-dd', new Date());
         if (!isNaN(parsed.getTime())) {
@@ -71,7 +72,7 @@ export const RemindersScreen = observer(() => {
           const lDay = parseInt(parts[0], 10);
           const lMonth = parseInt(parts[1], 10);
           const lYear = r.repeatYearly ? currentYear : parseInt(parts[2], 10);
-          
+
           // Note: for repeatYearly, lunar year = current solar year. 
           // (They roughly align. e.g. Tet is Lunar month 1, Solar Jan/Feb)
           if (r.repeatYearly || lYear === currentYear || (lYear === currentYear - 1 && lMonth === 12)) {
@@ -85,7 +86,7 @@ export const RemindersScreen = observer(() => {
           }
         }
       }
-      
+
       if (eventSolarDate && eventLunarDate) {
         events.push({
           id: `custom_${r.id}_${currentYear}`,
@@ -97,7 +98,7 @@ export const RemindersScreen = observer(() => {
         });
       }
     }
-    
+
     // Sort all events chronologically
     return events.sort((a, b) => a.solarDate.getTime() - b.solarDate.getTime());
   }, [reminders, currentYear]);
@@ -110,7 +111,7 @@ export const RemindersScreen = observer(() => {
       upcoming: unifiedEvents.filter(e => e.solarDate.getTime() >= todayTime) // Soonest upcoming first
     };
   }, [unifiedEvents, today]);
-  
+
   const displayData = activeTab === 'upcoming' ? upcoming : past;
 
   const handleAdd = () => {
@@ -124,13 +125,15 @@ export const RemindersScreen = observer(() => {
   const handleDelete = (id: string) => {
     Alert.alert(t('reminders.deleteConfirmTitle'), t('reminders.deleteConfirmMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('reminders.delete'), style: 'destructive', onPress: () => {
-        remindersActions.deleteReminder(id);
-        overlay.showToast(t('reminders.deleted'));
-      }}
+      {
+        text: t('reminders.delete'), style: 'destructive', onPress: () => {
+          remindersActions.deleteReminder(id);
+          overlay.showToast(t('reminders.deleted'));
+        }
+      }
     ]);
   };
-  
+
   const handleItemPress = (item: UnifiedEvent) => {
     // Navigate to calendar screen and focus on the event's date
     const isoDate = format(item.solarDate, 'yyyy-MM-dd');
@@ -141,39 +144,38 @@ export const RemindersScreen = observer(() => {
 
   const renderItem = ({ item }: { item: UnifiedEvent }) => {
     const isCustom = item.type === 'custom';
-    
+
     return (
-      <Pressable 
+      <Pressable
         style={({ pressed }) => [
-          styles.card, 
-          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          styles.card,
           pressed && { opacity: 0.7 }
         ]}
         onPress={() => handleItemPress(item)}
       >
         <View style={styles.cardInfo}>
-          <Text style={[styles.cardTitle, { fontSize: scale(17), color: colors.text }]}>
+          <Text style={styles.cardTitle}>
             {item.title}
           </Text>
-          
+
           <View style={styles.dateRow}>
-            <Text style={[styles.solarDateText, { fontSize: scale(14), color: colors.primary }]}>
+            <Text style={styles.solarDateText}>
               {format(item.solarDate, 'dd/MM/yyyy')}
             </Text>
-            <Text style={[styles.dot, { color: colors.textMuted }]}>•</Text>
-            <Text style={[styles.lunarDateText, { fontSize: scale(14), color: colors.textMuted }]}>
+            <Text style={styles.dot}>•</Text>
+            <Text style={styles.lunarDateText}>
               {t('reminders.lunar')}: {item.lunarDate.day}/{item.lunarDate.month}
             </Text>
           </View>
         </View>
-        
+
         {isCustom ? (
           <Pressable hitSlop={15} onPress={() => handleEdit(item.originalId!)} style={styles.actionBtn}>
-            <Text style={{ fontSize: scale(14), fontWeight: '600', color: colors.primary }}>Sửa</Text>
+            <Text style={styles.actionBtnText}>Sửa</Text>
           </Pressable>
         ) : (
-          <View style={[styles.badge, { backgroundColor: colors.border }]}>
-            <Text style={[styles.badgeText, { fontSize: scale(11), color: colors.textMuted }]}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
               Sự kiện
             </Text>
           </View>
@@ -183,37 +185,29 @@ export const RemindersScreen = observer(() => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+    <View style={styles.container}>
+      <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={[styles.headerTitle, { fontSize: scale(28), color: colors.text, marginBottom: 0 }]}>
+          <Text style={styles.headerTitle}>
             {t('reminders.title')} {currentYear}
           </Text>
-          <Text style={[styles.headerSubtitle, { fontSize: scale(14), color: colors.primary, marginTop: 4, marginBottom: 20 }]}>
+          <Text style={styles.headerSubtitle}>
             Năm {getCanChiYear(currentYear)}
           </Text>
         </View>
-        
-        <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
-          <Pressable 
-            style={[styles.tabBtn, activeTab === 'upcoming' && { backgroundColor: colors.primary }]}
+
+        <View style={styles.tabContainer}>
+          <Pressable
+            style={styles.tabBtnUpcoming}
             onPress={() => setActiveTab('upcoming')}
           >
-            <Text style={[
-              styles.tabBtnText, 
-              { fontSize: scale(14), color: colors.text },
-              activeTab === 'upcoming' && { color: '#fff', fontWeight: 'bold' }
-            ]}>{t('reminders.upcoming')}</Text>
+            <Text style={styles.tabBtnTextUpcoming}>{t('reminders.upcoming')}</Text>
           </Pressable>
-          <Pressable 
-            style={[styles.tabBtn, activeTab === 'past' && { backgroundColor: colors.primary }]}
+          <Pressable
+            style={styles.tabBtnPast}
             onPress={() => setActiveTab('past')}
           >
-            <Text style={[
-              styles.tabBtnText, 
-              { fontSize: scale(14), color: colors.text },
-              activeTab === 'past' && { color: '#fff', fontWeight: 'bold' }
-            ]}>{t('reminders.past')}</Text>
+            <Text style={styles.tabBtnTextPast}>{t('reminders.past')}</Text>
           </Pressable>
         </View>
       </View>
@@ -225,7 +219,7 @@ export const RemindersScreen = observer(() => {
         estimatedItemSize={80}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={[styles.emptyText, { fontSize: scale(16), color: colors.textMuted }]}>
+            <Text style={styles.emptyText}>
               {t('reminders.empty')}
             </Text>
           </View>
@@ -233,33 +227,37 @@ export const RemindersScreen = observer(() => {
         renderItem={renderItem}
       />
 
-      <Pressable 
+      <Pressable
         style={({ pressed }) => [
-          styles.fab, 
-          { bottom: insets.bottom + 20, backgroundColor: colors.primary }, 
+          styles.fab,
           pressed && { opacity: 0.8 }
-        ]} 
+        ]}
         onPress={handleAdd}
       >
-        <Text style={[styles.fabText, { fontSize: scale(32) }]}>+</Text>
+        <Text style={styles.fabText}>+</Text>
       </Pressable>
     </View>
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, scale: (size: number) => number, insets: any, activeTab: string) => StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: insets.top,
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontWeight: '700',
-    marginBottom: 20,
+    marginBottom: 0,
+    fontSize: scale(28),
+    color: colors.text,
   },
   titleRow: {
     flexDirection: 'row',
@@ -268,20 +266,40 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontWeight: '500',
+    marginTop: 4,
+    marginBottom: 20,
+    fontSize: scale(14),
+    color: colors.primary,
   },
   tabContainer: {
     flexDirection: 'row',
     borderRadius: 8,
     padding: 4,
+    backgroundColor: colors.surface,
   },
-  tabBtn: {
+  tabBtnUpcoming: {
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
     borderRadius: 6,
+    backgroundColor: activeTab === 'upcoming' ? colors.primary : 'transparent',
   },
-  tabBtnText: {
-    fontWeight: '500',
+  tabBtnPast: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+    backgroundColor: activeTab === 'past' ? colors.primary : 'transparent',
+  },
+  tabBtnTextUpcoming: {
+    fontWeight: activeTab === 'upcoming' ? 'bold' : '500',
+    fontSize: scale(14),
+    color: activeTab === 'upcoming' ? '#fff' : colors.text,
+  },
+  tabBtnTextPast: {
+    fontWeight: activeTab === 'past' ? 'bold' : '500',
+    fontSize: scale(14),
+    color: activeTab === 'past' ? '#fff' : colors.text,
   },
   card: {
     flexDirection: 'row',
@@ -289,6 +307,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderBottomColor: colors.border,
   },
   cardInfo: {
     flex: 1,
@@ -296,6 +316,8 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontWeight: '600',
     marginBottom: 6,
+    fontSize: scale(17),
+    color: colors.text,
   },
   dateRow: {
     flexDirection: 'row',
@@ -303,25 +325,38 @@ const styles = StyleSheet.create({
   },
   solarDateText: {
     fontWeight: '600',
+    fontSize: scale(14),
+    color: colors.primary,
   },
   lunarDateText: {
     fontWeight: '400',
+    fontSize: scale(14),
+    color: colors.textMuted,
   },
   dot: {
     marginHorizontal: 8,
+    color: colors.textMuted,
   },
   actionBtn: {
     paddingLeft: 16,
     paddingVertical: 8,
   },
+  actionBtnText: {
+    fontSize: scale(14),
+    fontWeight: '600',
+    color: colors.primary,
+  },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    backgroundColor: colors.border,
   },
   badgeText: {
     fontWeight: '600',
     textTransform: 'uppercase',
+    fontSize: scale(11),
+    color: colors.textMuted,
   },
   empty: {
     padding: 32,
@@ -330,10 +365,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontWeight: '500',
+    fontSize: scale(16),
+    color: colors.textMuted,
   },
   fab: {
     position: 'absolute',
     right: 20,
+    bottom: insets.bottom + 20,
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -344,9 +382,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
+    backgroundColor: colors.primary,
   },
   fabText: {
     color: '#fff',
     marginTop: -4,
+    fontSize: scale(32),
   }
 });
