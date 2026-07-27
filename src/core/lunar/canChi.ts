@@ -8,12 +8,6 @@ export const EARTHLY_BRANCHES: TranslationKey[] = [
   'branch.ty', 'branch.suu', 'branch.dan', 'branch.mao', 'branch.thin', 'branch.ti', 'branch.ngo', 'branch.mui', 'branch.than', 'branch.dau', 'branch.tuat', 'branch.hoi',
 ];
 
-export function getYearCanChi(lunarYear: number): string {
-  const stemKey = HEAVENLY_STEMS[(lunarYear + 6) % 10];
-  const branchKey = EARTHLY_BRANCHES[(lunarYear + 8) % 12];
-  return `${t(stemKey)} ${t(branchKey)}`;
-}
-
 // Fixed Julian Day calculation for simplified Day Can Chi
 export function getDayCanChi(solarDate: Date): { canChi: string; branchKey: TranslationKey; branchIndex: number } {
   // Epoch: Jan 1, 1900 was Giáp Tuất (Stem 0, Branch 10).

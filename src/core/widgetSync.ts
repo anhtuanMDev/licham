@@ -2,6 +2,7 @@ import { NativeModules, Platform } from 'react-native';
 import { format } from 'date-fns';
 import { solarToLunar } from './lunar/convert';
 import { getDayCanChi } from './lunar/canChi';
+import { t } from './i18n/t';
 
 const { WidgetDataModule } = NativeModules;
 
@@ -22,11 +23,11 @@ export function syncWidgetData() {
   
   // Format Lunar
   const lunar = solarToLunar(today.getDate(), today.getMonth() + 1, today.getFullYear());
-  const lunarText = `Âm lịch: ${lunar.day}/${lunar.month}`;
-  
+  const lunarText = `${t('calendar.lunar_day')}: ${lunar.day}/${lunar.month}`;
+
   // Format Can Chi
   const canChiInfo = getDayCanChi(today);
-  const canChiText = `Ngày ${canChiInfo.canChi}`;
+  const canChiText = `${t('calendar.day_label')} ${canChiInfo.canChi}`;
 
   // Send to Native Android Module
   WidgetDataModule.setWidgetData(solarText, lunarText, canChiText);

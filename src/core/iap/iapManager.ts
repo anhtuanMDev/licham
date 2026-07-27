@@ -2,6 +2,7 @@ import { initConnection, endConnection, getAvailablePurchases, purchaseUpdatedLi
 import { Platform } from 'react-native';
 import { settings$ } from '../../state/settings';
 import { overlay } from '../../overlay/overlay';
+import { t } from '../i18n/t';
 
 export const PREMIUM_PRODUCT_ID = 'licham_premium';
 
@@ -49,7 +50,7 @@ export const iapManager = {
           } catch (ackErr) {
             console.log('[IAP] Failed to finish transaction', ackErr);
           }
-          overlay.showToast('Cảm ơn bạn đã nâng cấp Premium!');
+          overlay.showToast(t('iap.thanks_upgrade'), { type: 'success' });
         }
       });
 
@@ -85,24 +86,24 @@ export const iapManager = {
 
   async restorePurchases() {
     if (!isConnected) {
-      overlay.showToast('Dịch vụ mua hàng không khả dụng trên thiết bị này.', { type: 'error' });
+      overlay.showToast(t('iap.service_unavailable'), { type: 'error' });
       return;
     }
     try {
       const hasPremium = await this.verifyPurchases();
       if (hasPremium) {
-        overlay.showToast('Khôi phục mua hàng thành công!', { type: 'success' });
+        overlay.showToast(t('iap.restore_success'), { type: 'success' });
       } else {
-        overlay.showToast('Không tìm thấy giao dịch mua Premium trước đó.', { type: 'info' });
+        overlay.showToast(t('iap.restore_not_found'), { type: 'info' });
       }
     } catch (err) {
-      overlay.showToast('Không thể khôi phục mua hàng. Vui lòng thử lại sau.', { type: 'error' });
+      overlay.showToast(t('iap.restore_error'), { type: 'error' });
     }
   },
 
   async buyPremium() {
     if (!isConnected) {
-      overlay.showToast('Dịch vụ mua hàng không khả dụng trên thiết bị này.', { type: 'error' });
+      overlay.showToast(t('iap.service_unavailable'), { type: 'error' });
       return;
     }
     try {

@@ -1,4 +1,4 @@
-import { LunarDate } from './lunar/convert';
+import { LunarDate, solarToLunar } from './lunar/convert';
 import { format } from 'date-fns';
 import { TranslationKey } from './i18n/t';
 
@@ -52,9 +52,8 @@ export function getEventsForDate(solarDate: Date, lunarDate: LunarDate): Transla
   if (lunarDate.month === 12) {
     const tomorrow = new Date(solarDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const { solarToLunar } = require('./lunar/convert');
     const tomorrowLunar = solarToLunar(tomorrow.getDate(), tomorrow.getMonth() + 1, tomorrow.getFullYear());
-    
+
     if (tomorrowLunar.day === 1 && tomorrowLunar.month === 1) {
       events.push('holiday.lunar_nye');
     }
@@ -76,7 +75,6 @@ export type PredefinedEvent = {
  */
 export function getAllPredefinedEventsForYear(year: number): PredefinedEvent[] {
   const allEvents: PredefinedEvent[] = [];
-  const { solarToLunar } = require('./lunar/convert');
 
   // Start from Jan 1st of the year
   const date = new Date(year, 0, 1);

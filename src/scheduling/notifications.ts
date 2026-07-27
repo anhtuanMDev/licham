@@ -19,15 +19,24 @@ export const notifications = {
         targetSolarDate = addYears(targetSolarDate, 1);
       }
     } else {
-      // Lunar date is usually saved as DD/MM/YYYY
+      // Lunar date is saved as DD/MM/YYYY or DD/MM (for repeatYearly reminders)
       const [dayStr, monthStr, yearStr] = reminder.date.split('/');
       const day = parseInt(dayStr, 10);
       const month = parseInt(monthStr, 10);
-      let year = yearStr ? parseInt(yearStr, 10) : solarToLunar(now.getDate(), now.getMonth() + 1, now.getFullYear()).year;
-      
+
+      // Guard: if no year stored and not repeating, we can't determine the correct year
+      if (!yearStr && !reminder.repeatYearly) {
+        console.log('[Notifications] Skipping lunar reminder with no year and repeatYearly=false');
+        return;
+      }
+
+      let year = yearStr
+        ? parseInt(yearStr, 10)
+        : solarToLunar(now.getDate(), now.getMonth() + 1, now.getFullYear()).year;
+
       const isLeap = reminder.calendarType === 'lunar' && reminder.isLeapMonth ? 1 : 0;
       targetSolarDate = lunarToSolar(day, month, year, isLeap);
-      
+
       if (reminder.repeatYearly && isBefore(targetSolarDate, now)) {
         year += 1;
         targetSolarDate = lunarToSolar(day, month, year, isLeap);

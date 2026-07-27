@@ -114,5 +114,10 @@ export default {
   "settings.font.large": "Large",
   "settings.purchases": "PURCHASES",
   "settings.restorePurchases": "Restore Purchases",
-  "settings.restore": "Restore"
+  "settings.restore": "Restore",
+  "iap.thanks_upgrade": "Thank you for upgrading to Premium!",
+  "iap.service_unavailable": "Purchase service is not available on this device.",
+  "iap.restore_success": "Purchases restored successfully!",
+  "iap.restore_not_found": "No previous Premium purchase found.",
+  "iap.restore_error": "Could not restore purchases. Please try again later."
 }

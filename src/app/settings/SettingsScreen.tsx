@@ -25,8 +25,7 @@ export const SettingsScreen = observer(() => {
   };
 
   const handleRestore = async () => {
-    overlay.showToast('Đang khôi phục...');
-    await iapManager.verifyPurchases();
+    await iapManager.restorePurchases();
   };
 
   const cycleTheme = () => {

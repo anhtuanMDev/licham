@@ -114,5 +114,10 @@ export default {
   "settings.font.large": "Lớn",
   "settings.purchases": "MUA HÀNG",
   "settings.restorePurchases": "Khôi phục mua hàng",
-  "settings.restore": "Khôi phục"
+  "settings.restore": "Khôi phục",
+  "iap.thanks_upgrade": "Cảm ơn bạn đã nâng cấp Premium!",
+  "iap.service_unavailable": "Dịch vụ mua hàng không khả dụng trên thiết bị này.",
+  "iap.restore_success": "Khôi phục mua hàng thành công!",
+  "iap.restore_not_found": "Không tìm thấy giao dịch mua Premium trước đó.",
+  "iap.restore_error": "Không thể khôi phục mua hàng. Vui lòng thử lại sau."
 }

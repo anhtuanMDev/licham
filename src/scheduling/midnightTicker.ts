@@ -39,6 +39,16 @@ export const midnightTicker = {
     appStateSubscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
       if (nextState === 'active') {
         syncWidgetData();
+        // Only reset the selected date if it's stale (user backgrounded past midnight)
+        const todayIso = format(new Date(), 'yyyy-MM-dd');
+        if (calendar$.selectedDate.get() !== todayIso) {
+          const stored = new Date(calendar$.selectedDate.get());
+          const today = new Date();
+          // Only auto-advance if the stored date is in the past (crossed midnight)
+          if (stored < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+            calendar$.selectedDate.set(todayIso);
+          }
+        }
         scheduleNextMidnight();
       } else {
         if (timerId) clearTimeout(timerId);
