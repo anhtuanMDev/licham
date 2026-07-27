@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { overlay } from '../../overlay/overlay';
 import { format, parse } from 'date-fns';
 import { solarToLunar } from '../../core/lunar/convert';
-import { getDayCanChi, getYearCanChi, getConflictingBranch } from '../../core/lunar/canChi';
+import { getDayCanChi, getConflictingBranch } from '../../core/lunar/canChi';
+import { getCanChiYear } from '../../core/lunar/convert';
 import { getEventsForDate } from '../../core/events';
 import { MoonPhase } from '../../components/MoonPhase';
 import { t } from '../../core/i18n/t';
@@ -25,7 +26,7 @@ export const DayDetailSheet: React.FC<Props> = observer(({ dateIso }) => {
   
   // Calculate Can Chi
   const dayCanChi = getDayCanChi(solarDate);
-  const yearCanChi = getYearCanChi(lunar.year);
+  const yearCanChi = getCanChiYear(lunar.year);
   const conflictingBranch = getConflictingBranch(dayCanChi.branchIndex);
   
   // Calculate Events
