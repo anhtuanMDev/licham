@@ -34,9 +34,9 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
 
   return (
     <Pressable 
-      style={[
+      style={({ pressed }) => [
         styles.container, 
-        isSelected && styles.selectedContainer,
+        (isSelected || pressed) && styles.selectedContainer,
         isToday && styles.todayContainer
       ]} 
       onPress={handlePress}

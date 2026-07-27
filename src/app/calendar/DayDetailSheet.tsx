@@ -52,14 +52,10 @@ export const DayDetailSheet: React.FC<Props> = ({ dateIso }) => {
           <Text style={styles.infoLabel}>{t('calendar.year_label' as any)}:</Text>
           <Text style={styles.infoValue}>{yearCanChi}</Text>
         </View>
-      </View>
-      
-      <View style={styles.conflictBlock}>
-        <Text style={styles.conflictTitle}>{t('calendar.conflict_title' as any)}</Text>
-        <Text style={styles.conflictText}>
-          {t('calendar.conflict_desc_1' as any)} {dayCanChi.canChi} {t('calendar.conflict_desc_2' as any)} <Text style={styles.conflictHighlight}>{conflictingBranch}</Text>. 
-          {t('calendar.conflict_desc_3' as any)} {conflictingBranch} {t('calendar.conflict_desc_4' as any)}
-        </Text>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>{t('calendar.conflict_label' as any)}:</Text>
+          <Text style={styles.infoValue}>{conflictingBranch}</Text>
+        </View>
       </View>
       
       {events.length > 0 && (
@@ -131,29 +127,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     textTransform: 'capitalize',
-  },
-  conflictBlock: {
-    backgroundColor: '#fff0f0',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#ffcdd2',
-  },
-  conflictTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#d32f2f',
-    marginBottom: 8,
-  },
-  conflictText: {
-    fontSize: 14,
-    color: '#b71c1c',
-    lineHeight: 20,
-  },
-  conflictHighlight: {
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
   },
   eventBlock: {
     backgroundColor: '#fff',
