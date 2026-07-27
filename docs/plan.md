@@ -60,76 +60,94 @@
 
 ---
 
-## 4. Proposed Folder Structure
+## 4. Actual Folder Structure
 
 ```
 src/
   app/                    # screens / navigation
     calendar/
-    day-detail/
+      CalendarScreen.tsx
+      DayDetailSheet.tsx
+      GoodDayFinderModal.tsx
+      MonthYearPicker.tsx
     reminders/
+      RemindersScreen.tsx
+      ReminderDetailSheet.tsx
     settings/
+      SettingsScreen.tsx
+  components/
+    CalendarGrid/           # 42-cell month grid (non-virtualized)
+    DayCell/                # Moon phase Skia + RN text
+    MonthEventList.tsx      # Scrollable event list for current month
+    MoonPhase.tsx           # Skia moon phase illustration
   core/
-    lunar/                # conversion engine, pure functions, unit tests
-      convert.ts
-      canChi.ts
-      solarTerms.ts
+    lunar/                  # conversion engine, pure functions, unit tests
+      convert.ts            # solarToLunar, lunarToSolar, getCanChiYear (wraps @baostudio/viet-lunar)
+      canChi.ts             # getDayCanChi, getConflictingBranch, HEAVENLY_STEMS, EARTHLY_BRANCHES
+      hoangDao.ts           # Hoàng Đạo / Hắc Đạo logic
       __tests__/
     i18n/
-      en.json
-      vi.json
-      t.ts
+      en.ts                 # English flat-dictionary (NOT .json)
+      vi.ts                 # Vietnamese flat-dictionary (NOT .json)
+      t.ts                  # t(key) helper + TranslationKey type
+    iap/
+      iapManager.ts         # react-native-iap wrapper — init, buy, restore, verify
+    events.ts               # getEventsForDate, getAllPredefinedEventsForYear
+    theme.ts                # useAppTheme hook, AppColors type, light/dark/high-contrast palettes
+    widgetSync.ts           # Android home-screen widget data push
+    crashlytics.ts          # Stub interface (Firebase not yet integrated)
   state/
-    settings.ts           # settings$ observable + MMKV persist config
-    calendar.ts           # calendar$ (visibleMonth, selectedDate, lunarCache)
-    reminders.ts          # reminders$ + CRUD + notification scheduling
-    ui.ts                 # ui$ (modal, toastQueue, apiStatus map)
+    init.ts                 # MMKV persist plugin config (imported as side-effect)
+    settings.ts             # settings$ + MMKV persist
+    calendar.ts             # calendar$ (visibleMonth, selectedDate, lunarCache — in-memory only)
+    reminders.ts            # reminders$ + CRUD actions + notification scheduling
+    ui.ts                   # ui$ (modal, modalQueue, toastQueue)
   overlay/
-    OverlayHost.tsx        # single mount point for all modals/sheets
-    ToastHost.tsx
-    overlay.ts             # showModal/closeModal/toast.show API
-  net/
-    apiClient.ts           # fetch wrapper: abort, dedupe, retry, timeout
-    contentSync.ts         # remote holiday/good-day content refresh
+    OverlayHost.tsx         # single mount point for all modals/sheets
+    ToastHost.tsx           # theme-aware, type-colored (info/error/success) toast renderer
+    overlay.ts              # showModal/closeModal/showToast/dismissToast API
   scheduling/
-    midnightTicker.ts       # single recursive setTimeout, no interval
-    notifications.ts        # local notification scheduling for reminders
-  components/
-    CalendarGrid/
-    MonthPager/            # legend-list based
-    DayCell/                # Skia badge + RN text
+    midnightTicker.ts       # single recursive setTimeout; smart foreground resume
+    notifications.ts        # local notification scheduling for reminders (Notifee)
 ```
 
 ---
 
 ## 5. State Architecture (legend-state + MMKV)
 
-Four observable domains, each persisted or not as noted:
+Four observable domains:
 
 ```ts
-// state/settings.ts  — persisted
+// state/settings.ts  — persisted to MMKV ('app_settings')
 settings$: {
   locale: 'vi' | 'en',
   theme: 'light' | 'dark' | 'high-contrast',
   fontScale: number,
   notificationsEnabled: boolean,
+  isPremium: boolean,
 }
 
-// state/calendar.ts — mostly ephemeral, lunarCache persisted
+// state/calendar.ts — IN-MEMORY ONLY (not persisted)
+// lunarCache is intentionally NOT persisted — recomputed each session
+// from @baostudio/viet-lunar (fast arithmetic, no cache needed).
 calendar$: {
   visibleMonth: { year: number; month: number },
-  selectedDate: string,               // ISO
-  lunarCache: Record<string, LunarDay> // persisted, LRU-bounded
+  jumpDate: { year: number; month: number } | null, // programmatic navigation signal
+  selectedDate: string,                              // ISO yyyy-MM-dd
+  lunarCache: Record<string, LunarDate>              // session-only, filled by CalendarGrid
 }
 
-// state/reminders.ts — persisted
-reminders$: Reminder[]                 // { id, title, calendarType: 'solar'|'lunar', date, repeatYearly, notifId }
+// state/reminders.ts — persisted to MMKV ('app_reminders')
+type SolarReminder = { id, title, calendarType: 'solar', date: 'yyyy-MM-dd', repeatYearly, notifId? }
+type LunarReminder = { id, title, calendarType: 'lunar', date: 'DD/MM/YYYY', repeatYearly, notifId?, isLeapMonth? }
+reminders$: Reminder[]
 
 // state/ui.ts — never persisted
 ui$: {
-  modal: { id: string; type: ModalType; props: any } | null,
+  activeTab: 'calendar' | 'reminders' | 'settings',
+  modal: (ModalPayload & { id: string; priority?: 'critical'|'normal' }) | null,
+  modalQueue: (ModalPayload & { id: string; priority: 'critical'|'normal' })[],
   toastQueue: Toast[],
-  api: Record<string, { status: 'idle'|'pending'|'success'|'error'|'cancelled'; error?: string }>
 }
 ```
 
@@ -211,12 +229,10 @@ This is worth treating as a checklist, since leaked/duplicated timers are the mo
 
 ## 9. Lunar Conversion Engine
 
-- Lunar↔solar conversion is a pure, offline algorithm (the widely-used Hồ Ngọc Đức method, VN timezone UTC+7) — it is **not** an API call, and doesn't belong in date-fns.
-- Decide your supported year range up front (e.g. 1900–2100) since it determines the size of the new-moon epoch table bundled into the app.
-- Because it's cheap arithmetic, memoization is mainly about avoiding redundant object churn during fast scrolling, not raw compute cost:
-  - In-memory cache keyed by ISO date for the current session
-  - A rolling window (current month ± ~24 months) persisted to MMKV, extended lazily as the user scrolls the month pager — don't eagerly precompute the full supported range at launch.
-- Unit-test the conversion against known reference dates (Tết dates for several recent years are easy to verify against) before building UI on top of it.
+- Lunar↔solar conversion delegates to `@baostudio/viet-lunar` — a well-tested Vietnamese lunar library. Wrapped in `core/lunar/convert.ts` to provide a stable internal API (`solarToLunar`, `lunarToSolar`, `getCanChiYear`).
+- The lunarCache in `calendar$` is **session-only** (not persisted). Conversion is fast enough arithmetic that re-computing on app launch is preferable to managing a stale persistent cache. The `CalendarGrid` populates the cache as it renders each month.
+- `getAllPredefinedEventsForYear(year)` in `core/events.ts` iterates all 365 days of a year to collect holidays — this is called once per year in `RemindersScreen` and memoized with `useMemo`.
+- Unit tests for the conversion are in `core/lunar/__tests__/` — should cover known reference dates (Tết 2024–2026, Trung Thu, Vu Lan).
 
 ---
 
@@ -260,7 +276,8 @@ Since this is heading to public release:
 
 ---
 
-## 14. Open Decisions Worth Making Early
-- **Monetization**, since ads are off the table: free passion project, one-time unlock, optional tip, or small IAP for extra themes/widget packs — each has different store/legal overhead, worth picking a direction before Phase 3.
-- **Analytics**: none, or a privacy-respecting minimal option — affects your privacy disclosure either way.
-- **Supported lunar year range** (§9) — pick this before building the conversion table.
+## 14. Open Decisions
+- **Monetization** — IAP is implemented (`core/iap/iapManager.ts` with `react-native-iap`, product ID `licham_premium`). Premium unlocks ad removal. The `settings$.isPremium` flag gates the premium UI in `SettingsScreen`. **Remaining work**: replace the mock "Buy Now" flow with a real product registered in Google Play Console / App Store Connect, test end-to-end purchase + restore.
+- **Crashlytics** — `core/crashlytics.ts` is currently a stub (logs to console in dev only). When ready to integrate real crash reporting, install `@react-native-firebase/app` + `@react-native-firebase/crashlytics` and replace the stub methods — the call sites are already wired.
+- **Analytics** — currently none. If adding, update the Privacy Policy to disclose it before store submission.
+- **iOS widget** — `widgetSync.ts` has Android support only. iOS widget sync is a `// TODO` placeholder.
