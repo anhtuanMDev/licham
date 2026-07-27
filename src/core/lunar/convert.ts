@@ -1,6 +1,7 @@
 import {
   solarToLunar as vlSolarToLunar,
   lunarToSolar as vlLunarToSolar,
+  getCanChiYear as vlGetCanChiYear,
 } from '@baostudio/viet-lunar';
 
 export type LunarDate = {
@@ -28,4 +29,9 @@ export function lunarToSolar(lunarDay: number, lunarMonth: number, lunarYear: nu
     leapMonth: lunarLeap !== 0,
   });
   return new Date(result.year, result.month - 1, result.day);
+}
+
+export function getCanChiYear(year: number) {
+  const result = vlGetCanChiYear(year);
+  return `${result.stem} ${result.branch}`;
 }

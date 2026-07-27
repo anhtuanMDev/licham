@@ -12,7 +12,7 @@ import { reminders$, remindersActions, Reminder } from '../../state/reminders';
 import { ui$ } from '../../state/ui';
 import { calendar$ } from '../../state/calendar';
 import { getAllPredefinedEventsForYear } from '../../core/events';
-import { solarToLunar, lunarToSolar, LunarDate } from '../../core/lunar/convert';
+import { solarToLunar, lunarToSolar, LunarDate, getCanChiYear } from '../../core/lunar/convert';
 
 type UnifiedEvent = {
   id: string;
@@ -185,9 +185,14 @@ export const RemindersScreen = observer(() => {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { fontSize: scale(28), color: colors.text }]}>
-          {t('reminders.title')} {currentYear}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.headerTitle, { fontSize: scale(28), color: colors.text, marginBottom: 0 }]}>
+            {t('reminders.title')} {currentYear}
+          </Text>
+          <Text style={[styles.headerSubtitle, { fontSize: scale(14), color: colors.primary, marginTop: 4, marginBottom: 20 }]}>
+            Năm {getCanChiYear(currentYear)}
+          </Text>
+        </View>
         
         <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
           <Pressable 
@@ -255,6 +260,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontWeight: '700',
     marginBottom: 20,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  headerSubtitle: {
+    fontWeight: '500',
   },
   tabContainer: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import { settings$ } from '../../state/settings';
 import { CalendarGrid } from '../../components/CalendarGrid';
 import { overlay } from '../../overlay/overlay';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { getCanChiYear } from '../../core/lunar/convert';
 import { t } from '../../core/i18n/t';
 import { MonthEventList } from '../../components/MonthEventList';
 import { useAppTheme } from '../../core/theme';
@@ -84,6 +85,9 @@ export const CalendarScreen = observer(() => {
         <Pressable onPress={() => overlay.showModal({ type: 'month_year_picker' })}>
           <Text style={[styles.headerTitle, { fontSize: scale(20), color: colors.text }]} accessibilityRole="header" allowFontScaling={true}>
             {t('calendar.month' as any)} {currentMonth.month}, {currentMonth.year}
+          </Text>
+          <Text style={[styles.headerSubtitle, { fontSize: scale(14), color: colors.primary, marginTop: 4 }]} allowFontScaling={true}>
+            Năm {getCanChiYear(currentMonth.year)}
           </Text>
         </Pressable>
         <View style={styles.headerActions}>
@@ -166,6 +170,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
+  },
+  headerSubtitle: {
+    fontWeight: '500',
   },
   headerActions: {
     flexDirection: 'row',
