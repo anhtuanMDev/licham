@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { observer } from '@legendapp/state/react';
 import { calendar$ } from '../../state/calendar';
+import { reminders$ } from '../../state/reminders';
 import { overlay } from '../../overlay/overlay';
 import { getEventsForDate } from '../../core/events';
 import { parse } from 'date-fns';
@@ -22,8 +23,27 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
   const { colors, scale } = useAppTheme();
   
   // Check for auto-computed holidays
-  const events = lunarInfo ? getEventsForDate(parse(dateIso, 'yyyy-MM-dd', new Date()), lunarInfo) : [];
-  const hasEvent = events.length > 0;
+  const holidayEvents = lunarInfo ? getEventsForDate(parse(dateIso, 'yyyy-MM-dd', new Date()), lunarInfo) : [];
+  
+  // Check for custom user reminders
+  const allReminders = reminders$.get() || [];
+  const hasCustomEvent = allReminders.some(r => {
+    if (r.calendarType === 'solar') {
+      const key = r.repeatYearly ? r.date.slice(-5) : r.date;
+      const target = r.repeatYearly ? dateIso.slice(-5) : dateIso;
+      return key === target;
+    } else if (r.calendarType === 'lunar' && lunarInfo) {
+      const key = r.repeatYearly ? r.date.substring(0, 5) : r.date;
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const target = r.repeatYearly 
+        ? `${pad(lunarInfo.day)}/${pad(lunarInfo.month)}`
+        : `${pad(lunarInfo.day)}/${pad(lunarInfo.month)}/${lunarInfo.year}`;
+      return key === target;
+    }
+    return false;
+  });
+
+  const hasEvent = holidayEvents.length > 0 || hasCustomEvent;
 
   const handlePress = () => {
     calendar$.selectedDate.set(dateIso);
