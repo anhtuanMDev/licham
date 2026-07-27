@@ -151,14 +151,14 @@ export const SettingsScreen = observer(() => {
         {renderRow(
           t('settings.theme'),
           <Text style={styles.rowValueText}>
-            {settings.theme === 'light' ? 'Sáng' : settings.theme === 'dark' ? 'Tối' : 'Tương phản cao'}
+            {settings.theme === 'light' ? t('settings.theme.light') : settings.theme === 'dark' ? t('settings.theme.dark') : t('settings.theme.high_contrast')}
           </Text>,
           cycleTheme
         )}
         {renderRow(
           t('settings.fontSize'),
           <Text style={styles.rowValueText}>
-            {settings.fontScale === 0.8 ? 'Nhỏ' : settings.fontScale === 1.2 ? 'Lớn' : 'Bình thường'}
+            {settings.fontScale === 0.8 ? t('settings.font.small') : settings.fontScale === 1.2 ? t('settings.font.large') : t('settings.font.normal')}
           </Text>,
           cycleFontScale,
           true

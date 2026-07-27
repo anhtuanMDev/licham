@@ -15,9 +15,9 @@ import { MonthYearPickerModal } from '../app/calendar/MonthYearPicker';
 export const OverlayHost = observer(() => {
   const currentModal = ui$.modal.get();
   const { colors } = useAppTheme();
-  
+
   if (!currentModal) return null;
-  
+
   let content: React.ReactNode = null;
 
   switch (currentModal.type) {
@@ -38,12 +38,12 @@ export const OverlayHost = observer(() => {
       const _exhaustiveCheck: never = currentModal;
       return _exhaustiveCheck;
   }
-  
+
   const isCentered = currentModal.type === 'month_year_picker';
-  
+
   return (
     <Modal visible={true} transparent={true} animationType="fade">
-      <View style={[styles.backdrop, isCentered && styles.backdropCentered]}>
+      <View style={[styles.backdrop, { backgroundColor: colors.overlay }, isCentered && styles.backdropCentered]}>
         <Pressable style={styles.backdropPressable} onPress={overlay.closeModal} />
         <View style={[styles.modalContent, { backgroundColor: colors.background }, isCentered && styles.modalContentCentered]}>
           {content}
@@ -56,7 +56,6 @@ export const OverlayHost = observer(() => {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end', // Assume most are bottom sheets
   },
   backdropPressable: {

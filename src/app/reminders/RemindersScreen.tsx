@@ -171,12 +171,12 @@ export const RemindersScreen = observer(() => {
 
         {isCustom ? (
           <Pressable hitSlop={15} onPress={() => handleEdit(item.originalId!)} style={styles.actionBtn}>
-            <Text style={styles.actionBtnText}>Sửa</Text>
+            <Text style={styles.actionBtnText}>{t('reminders.edit')}</Text>
           </Pressable>
         ) : (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
-              Sự kiện
+              {t('reminders.event_badge')}
             </Text>
           </View>
         )}
@@ -192,7 +192,7 @@ export const RemindersScreen = observer(() => {
             {t('reminders.title')} {currentYear}
           </Text>
           <Text style={styles.headerSubtitle}>
-            Năm {getCanChiYear(currentYear)}
+            {t('reminders.can_chi_prefix')} {getCanChiYear(currentYear)}
           </Text>
         </View>
 

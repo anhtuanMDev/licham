@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { observer } from '@legendapp/state/react';
 import { calendar$ } from '../../state/calendar';
@@ -21,6 +21,10 @@ interface DayCellProps {
 export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurrentMonth }: DayCellProps) => {
   const isSelected = calendar$.selectedDate.get() === dateIso;
   const { colors, scale } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, scale, isSelected, isToday, isCurrentMonth),
+    [colors, scale, isSelected, isToday, isCurrentMonth]
+  );
   
   // Check for auto-computed holidays
   const holidayEvents = lunarInfo ? getEventsForDate(parse(dateIso, 'yyyy-MM-dd', new Date()), lunarInfo) : [];
@@ -55,13 +59,12 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
   };
 
   return (
-    <Pressable 
+    <Pressable
       style={({ pressed }) => [
         styles.container,
-        { borderColor: colors.border },
-        (isSelected || pressed) && [styles.selectedContainer, { backgroundColor: colors.primary + '1a', borderColor: colors.primary }],
-        isToday && [styles.todayContainer, { backgroundColor: colors.dangerSurface, borderColor: colors.danger }]
-      ]} 
+        (isSelected || pressed) && styles.selectedContainer,
+        isToday && styles.todayContainer,
+      ]}
       onPress={handlePress}
       onLongPress={handleLongPress}
       accessible={true}
@@ -69,52 +72,77 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
       accessibilityLabel={`${t('calendar.accessibility.day' as any)} ${solarDay} ${t('calendar.accessibility.solar_month' as any)}. ${lunarInfo ? `${t('calendar.accessibility.day' as any)} ${lunarInfo.day} ${t('calendar.accessibility.lunar_month' as any)} ${lunarInfo.month} ${t('calendar.accessibility.lunar' as any)}.` : ''}`}
       accessibilityHint={t('calendar.accessibility.hint' as any)}
     >
-      <Text style={[
-        styles.solarText,
-        { fontSize: scale(18), color: colors.text },
-        !isCurrentMonth && [styles.outOfMonthText, { color: colors.border }],
-        (isToday || isSelected) && [styles.highlightText, { color: isToday ? colors.danger : colors.primary }]
-      ]}>
+      <Text style={styles.solarText}>
         {solarDay}
       </Text>
-      
+
       {lunarInfo && (
-        <Text style={[
-          styles.lunarText,
-          { fontSize: scale(12), color: colors.textMuted },
-          (lunarInfo.day === 1 || lunarInfo.day === 15) && [styles.lunarSpecialText, { color: colors.danger }]
-        ]}>
+        <Text style={
+          (lunarInfo.day === 1 || lunarInfo.day === 15)
+            ? styles.lunarSpecialText
+            : styles.lunarText
+        }>
           {lunarInfo.day === 1 ? `${lunarInfo.day}/${lunarInfo.month}` : lunarInfo.day}
         </Text>
       )}
-      
-      {hasEvent && <View style={[styles.eventDot, { backgroundColor: colors.danger }]} />}
+
+      {hasEvent && <View style={styles.eventDot} />}
     </Pressable>
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (
+  colors: any,
+  scale: (n: number) => number,
+  isSelected: boolean,
+  isToday: boolean,
+  isCurrentMonth: boolean
+) => StyleSheet.create({
   container: {
     flex: 1,
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0.5,
+    borderColor: colors.border,
+    ...(isSelected && {
+      backgroundColor: colors.primary + '1a',
+      borderColor: colors.primary,
+    }),
+    ...(isToday && {
+      backgroundColor: colors.dangerSurface,
+      borderColor: colors.danger,
+    }),
   },
-  selectedContainer: {},
-  todayContainer: {},
+  selectedContainer: {
+    backgroundColor: colors.primary + '1a',
+    borderColor: colors.primary,
+  },
+  todayContainer: {
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.danger,
+  },
   solarText: {
-    fontWeight: '500',
-  },
-  outOfMonthText: {},
-  highlightText: {
-    fontWeight: 'bold',
+    fontWeight: isToday || isSelected ? 'bold' : '500',
+    fontSize: scale(18),
+    color: !isCurrentMonth
+      ? colors.border
+      : isToday
+        ? colors.danger
+        : isSelected
+          ? colors.primary
+          : colors.text,
   },
   lunarText: {
     marginTop: 2,
+    fontSize: scale(12),
+    color: colors.textMuted,
   },
   lunarSpecialText: {
+    marginTop: 2,
     fontWeight: '500',
+    fontSize: scale(12),
+    color: colors.danger,
   },
   eventDot: {
     width: 4,
@@ -122,5 +150,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     position: 'absolute',
     bottom: 4,
-  }
+    backgroundColor: colors.danger,
+  },
 });

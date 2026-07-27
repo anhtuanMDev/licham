@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Switch } from 'react-native';
 import { overlay } from '../../overlay/overlay';
+import { t } from '../../core/i18n/t';
 import { reminders$, remindersActions } from '../../state/reminders';
 import { notifications } from '../../scheduling/notifications';
 import { format, parse } from 'date-fns';
@@ -19,7 +20,7 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
 
   const [title, setTitle] = useState(existing?.title || '');
   const [calendarType, setCalendarType] = useState<'solar' | 'lunar'>(existing?.calendarType || 'lunar');
-  const styles = useMemo(() => createStyles(colors, scale, calendarType), [colors, scale, calendarType]);
+
   const getInitialDateStr = () => {
     if (existing) {
       if (existing.calendarType === 'solar') {
@@ -33,6 +34,9 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
 
   const [dateStr, setDateStr] = useState(getInitialDateStr());
   const [repeatYearly, setRepeatYearly] = useState(existing?.repeatYearly ?? true);
+
+  // useMemo MUST come after all useState declarations (React Hook rules)
+  const styles = useMemo(() => createStyles(colors, scale, calendarType), [colors, scale, calendarType]);
 
   // Compute converted lunar date preview when calendarType === 'solar'
   let convertedLunarStr: string | null = null;
@@ -54,18 +58,17 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
 
   const handleSave = async () => {
     if (!title.trim()) {
-      overlay.showToast('Vui lòng nhập tiêu đề', { type: 'error' });
+      overlay.showToast(t('reminders.form.error_title'), { type: 'error' });
       return;
     }
 
     if (calendarType === 'solar' && !finalSolarDbStr) {
-      overlay.showToast('Ngày Dương lịch không hợp lệ (Định dạng: DD/MM/YYYY)', { type: 'error' });
+      overlay.showToast(t('reminders.form.error_solar_date'), { type: 'error' });
       return;
     }
 
-    // For lunar, we could add basic validation but trusting DD/MM/YYYY format for now
     if (calendarType === 'lunar' && dateStr.trim().split('/').length !== 3) {
-      overlay.showToast('Ngày Âm lịch không hợp lệ (Định dạng: DD/MM/YYYY)', { type: 'error' });
+      overlay.showToast(t('reminders.form.error_lunar_date'), { type: 'error' });
       return;
     }
 
@@ -80,7 +83,7 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
         date: finalDate,
         repeatYearly
       });
-      overlay.showToast('Đã lưu nhắc nhở');
+      overlay.showToast(t('reminders.form.saved'));
     } else {
       await remindersActions.addReminder({
         title,
@@ -88,7 +91,7 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
         date: finalDate,
         repeatYearly
       });
-      overlay.showToast('Đã thêm nhắc nhở');
+      overlay.showToast(t('reminders.form.added'));
     }
 
     overlay.closeModal();
@@ -98,15 +101,15 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>
-          {existingId ? 'Sửa Nhắc Nhở' : 'Thêm Nhắc Nhở'}
+          {existingId ? t('reminders.form.edit_title') : t('reminders.form.add_title')}
         </Text>
         <Pressable hitSlop={15} onPress={() => overlay.closeModal()}>
-          <Text style={styles.cancelText}>Hủy</Text>
+          <Text style={styles.cancelText}>{t('common.cancel')}</Text>
         </Pressable>
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabelBase}>TIÊU ĐỀ</Text>
+        <Text style={styles.inputLabelBase}>{t('reminders.form.title_label')}</Text>
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
@@ -119,14 +122,14 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
       </View>
 
       <View style={styles.toggleRow}>
-        <Text style={styles.inputLabelBase}>LOẠI LỊCH</Text>
+        <Text style={styles.inputLabelBase}>{t('reminders.form.calendar_type')}</Text>
         <View style={styles.toggleGroup}>
           <Pressable
             style={styles.toggleBtn}
             onPress={() => setCalendarType('lunar')}
           >
             <Text style={calendarType === 'lunar' ? styles.toggleTextActive : styles.toggleText}>
-              Âm Lịch
+              {t('reminders.form.lunar')}
             </Text>
           </Pressable>
           <Text style={styles.toggleDivider}>|</Text>
@@ -135,14 +138,14 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
             onPress={() => setCalendarType('solar')}
           >
             <Text style={calendarType === 'solar' ? styles.toggleTextActive : styles.toggleText}>
-              Dương Lịch
+              {t('reminders.form.solar')}
             </Text>
           </Pressable>
         </View>
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabelBase}>NGÀY</Text>
+        <Text style={styles.inputLabelBase}>{t('reminders.form.date_label')}</Text>
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
@@ -156,15 +159,15 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
 
       {calendarType === 'solar' && (
         <View style={styles.conversionBox}>
-          <Text style={styles.conversionLabel}>Tự động quy đổi sang Âm lịch:</Text>
+          <Text style={styles.conversionLabel}>{t('reminders.form.conversion_label')}</Text>
           <Text style={styles.conversionValue}>
-            {convertedLunarStr ? `${convertedLunarStr} (Âm lịch)` : 'Chưa đúng định dạng DD/MM/YYYY'}
+            {convertedLunarStr ? `${convertedLunarStr} (${t('reminders.lunar')})` : t('reminders.form.conversion_placeholder')}
           </Text>
         </View>
       )}
 
       <View style={styles.switchRow}>
-        <Text style={styles.switchLabel}>Lặp lại hằng năm</Text>
+        <Text style={styles.switchLabel}>{t('reminders.form.repeat_yearly')}</Text>
         <Switch value={repeatYearly} onValueChange={setRepeatYearly} trackColor={{ true: colors.primary }} />
       </View>
 
@@ -176,7 +179,7 @@ export const ReminderDetailSheet: React.FC<Props> = observer(({ existingId }) =>
         onPress={handleSave}
       >
         <Text style={styles.saveBtnText}>
-          {calendarType === 'solar' ? 'Xác nhận & Lưu' : 'Lưu Nhắc Nhở'}
+          {calendarType === 'solar' ? t('reminders.form.confirm_save') : t('reminders.form.save')}
         </Text>
       </Pressable>
     </View>

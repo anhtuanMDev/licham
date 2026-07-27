@@ -23,6 +23,7 @@ export const MonthEventList = observer(() => {
   const currentMonth = calendar$.visibleMonth.get();
   const allReminders = reminders$.get() || [];
   const { colors, scale, isDark } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors, scale, isDark), [colors, scale, isDark]);
 
   const events = useMemo(() => {
     const { year, month } = currentMonth;
@@ -103,35 +104,34 @@ export const MonthEventList = observer(() => {
 
   if (events.length === 0) {
     return (
-      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.emptyText, { color: colors.textMuted, fontSize: scale(15) }]}>Không có sự kiện nào trong tháng này</Text>
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>{t('calendar.month_events_empty')}</Text>
       </View>
     );
   }
 
   const renderItem = ({ item }: { item: MonthEvent }) => {
     return (
-      <Pressable 
+      <Pressable
         style={({ pressed }) => [
-          styles.eventCard, 
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          styles.eventCard,
           pressed && { opacity: 0.7 }
         ]}
-        onPress={() => overlay.showModal({ 
-          type: 'day_detail', 
-          props: { dateIso: format(new Date(currentMonth.year, currentMonth.month - 1, item.day), 'yyyy-MM-dd') } 
+        onPress={() => overlay.showModal({
+          type: 'day_detail',
+          props: { dateIso: format(new Date(currentMonth.year, currentMonth.month - 1, item.day), 'yyyy-MM-dd') }
         })}
       >
-        <View style={[styles.dateBadge, { backgroundColor: colors.primary + '1a' }]}>
-          <Text style={[styles.dateBadgeDay, { color: colors.primary, fontSize: scale(16) }]}>{item.day}</Text>
+        <View style={styles.dateBadge}>
+          <Text style={styles.dateBadgeDay}>{item.day}</Text>
         </View>
         <View style={styles.eventInfo}>
-          <Text style={[styles.eventTitle, { color: colors.text, fontSize: scale(16) }]} numberOfLines={1}>{item.title}</Text>
-          <Text style={[styles.eventDateSub, { color: colors.textMuted, fontSize: scale(13) }]}>{item.dateStr}</Text>
+          <Text style={styles.eventTitle} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.eventDateSub}>{item.dateStr}</Text>
         </View>
-        <View style={[styles.typeBadge, item.type === 'holiday' ? { backgroundColor: isDark ? '#3a1c1c' : '#fef1f2' } : { backgroundColor: isDark ? '#1a3320' : '#e6f4ea' }]}>
-          <Text style={[styles.typeBadgeText, { fontSize: scale(12) }, item.type === 'holiday' ? { color: isDark ? '#ff6b6b' : '#d93025' } : { color: isDark ? '#4caf50' : '#137333' }]}>
-            {item.type === 'holiday' ? 'Lễ' : 'Nhắc nhở'}
+        <View style={item.type === 'holiday' ? styles.typeBadgeHoliday : styles.typeBadgeReminder}>
+          <Text style={item.type === 'holiday' ? styles.typeBadgeTextHoliday : styles.typeBadgeTextReminder}>
+            {item.type === 'holiday' ? t('calendar.badge.holiday') : t('calendar.badge.reminder')}
           </Text>
         </View>
       </Pressable>
@@ -139,8 +139,8 @@ export const MonthEventList = observer(() => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.headerTitle, { color: colors.text, fontSize: scale(18) }]}>Sự kiện trong tháng</Text>
+    <View style={styles.container}>
+      <Text style={styles.headerTitle}>{t('calendar.month_events_title')}</Text>
       <ScrollView
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -155,15 +155,18 @@ export const MonthEventList = observer(() => {
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, scale: (n: number) => number, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+    backgroundColor: colors.background,
   },
   headerTitle: {
     fontWeight: '700',
     marginBottom: 12,
+    fontSize: scale(18),
+    color: colors.text,
   },
   listContent: {
     paddingBottom: 24,
@@ -175,6 +178,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
   },
   dateBadge: {
     width: 40,
@@ -183,9 +188,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    backgroundColor: colors.primary + '1a',
   },
   dateBadgeDay: {
     fontWeight: '700',
+    fontSize: scale(16),
+    color: colors.primary,
   },
   eventInfo: {
     flex: 1,
@@ -194,24 +202,47 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontWeight: '600',
     marginBottom: 2,
+    fontSize: scale(16),
+    color: colors.text,
   },
-  eventDateSub: {},
-  typeBadge: {
+  eventDateSub: {
+    fontSize: scale(13),
+    color: colors.textMuted,
+  },
+  typeBadgeHoliday: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     marginLeft: 8,
+    backgroundColor: isDark ? '#3a1c1c' : '#fef1f2',
   },
-  typeBadgeText: {
+  typeBadgeReminder: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+    backgroundColor: isDark ? '#1a3320' : '#e6f4ea',
+  },
+  typeBadgeTextHoliday: {
     fontWeight: '600',
+    fontSize: scale(12),
+    color: isDark ? '#ff6b6b' : '#d93025',
+  },
+  typeBadgeTextReminder: {
+    fontWeight: '600',
+    fontSize: scale(12),
+    color: isDark ? '#4caf50' : '#137333',
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    backgroundColor: colors.background,
   },
   emptyText: {
     fontStyle: 'italic',
-  }
+    fontSize: scale(15),
+    color: colors.textMuted,
+  },
 });

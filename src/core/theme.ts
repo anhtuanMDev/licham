@@ -11,6 +11,7 @@ export type AppColors = {
   danger: string;
   dangerSurface: string;
   dangerBorder: string;
+  overlay: string;
 };
 
 export const lightColors: AppColors = {
@@ -23,6 +24,7 @@ export const lightColors: AppColors = {
   danger: '#d32f2f',
   dangerSurface: '#fff0f0',
   dangerBorder: '#ffcdd2',
+  overlay: 'rgba(0,0,0,0.5)',
 };
 
 export const darkColors: AppColors = {
@@ -35,6 +37,7 @@ export const darkColors: AppColors = {
   danger: '#ff6b6b',
   dangerSurface: '#3a1c1c',
   dangerBorder: '#5a2a2a',
+  overlay: 'rgba(0,0,0,0.7)',
 };
 
 export const highContrastColors: AppColors = {
@@ -47,6 +50,7 @@ export const highContrastColors: AppColors = {
   danger: '#ff0000',
   dangerSurface: '#000000',
   dangerBorder: '#ff0000',
+  overlay: 'rgba(255,255,255,0.2)',
 };
 
 export function useAppTheme() {
