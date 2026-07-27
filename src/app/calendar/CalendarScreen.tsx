@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Pressable, ViewToken } from 'react-native';
 import { LegendList } from '@legendapp/list/react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,7 +39,19 @@ export const CalendarScreen = observer(() => {
   
   // We'd dynamically extend this array in a real app when scrolling near the edges
   const MONTH_PAGER_RADIUS = 12;
-  const [data] = useState<MonthItem[]>(() => generateMonths(currentMonth.year, currentMonth.month, MONTH_PAGER_RADIUS));
+  const jumpDate = calendar$.jumpDate.get();
+  
+  const [baseDate, setBaseDate] = useState({ year: currentMonth.year, month: currentMonth.month });
+
+  useEffect(() => {
+    if (jumpDate) {
+      setBaseDate(jumpDate);
+      calendar$.visibleMonth.set(jumpDate);
+      calendar$.jumpDate.set(null); // Reset it so it can be fired again
+    }
+  }, [jumpDate]);
+
+  const data = useMemo(() => generateMonths(baseDate.year, baseDate.month, MONTH_PAGER_RADIUS), [baseDate.year, baseDate.month]);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -61,9 +73,11 @@ export const CalendarScreen = observer(() => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} accessibilityRole="header" allowFontScaling={true}>
-          {t('calendar.month' as any)} {currentMonth.month}, {currentMonth.year}
-        </Text>
+        <Pressable onPress={() => overlay.showModal({ type: 'month_year_picker' })}>
+          <Text style={styles.headerTitle} accessibilityRole="header" allowFontScaling={true}>
+            {t('calendar.month' as any)} {currentMonth.month}, {currentMonth.year}
+          </Text>
+        </Pressable>
         <Pressable 
           style={styles.goodDayBtn}
           onPress={() => overlay.showModal({ type: 'good_day_finder' })}
@@ -90,6 +104,7 @@ export const CalendarScreen = observer(() => {
       </View>
       
       <LegendList
+        key={`${baseDate.year}-${baseDate.month}`}
         data={data}
         renderItem={renderItem}
         horizontal

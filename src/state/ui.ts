@@ -4,7 +4,8 @@ export type ModalPayload =
   | { type: 'reminder_edit'; props: { existingId?: string } }
   | { type: 'date_search'; props?: never }
   | { type: 'day_detail'; props: { dateIso: string } }
-  | { type: 'good_day_finder'; props?: never };
+  | { type: 'good_day_finder'; props?: never }
+  | { type: 'month_year_picker'; props?: never };
 
 export type Toast = {
   id: string;

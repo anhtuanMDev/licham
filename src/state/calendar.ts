@@ -7,6 +7,7 @@ export const calendar$ = observable({
     year: new Date().getFullYear(), 
     month: new Date().getMonth() + 1 // 1-indexed
   },
+  jumpDate: null as { year: number; month: number } | null,
   selectedDate: format(new Date(), 'yyyy-MM-dd'),
   // In-memory only cache — recomputed each session from @baostudio/viet-lunar
   lunarCache: {} as Record<string, LunarDate>,

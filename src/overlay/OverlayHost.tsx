@@ -7,6 +7,7 @@ import { overlay } from './overlay';
 import { ReminderDetailSheet } from '../app/reminders/ReminderDetailSheet';
 import { GoodDayFinderModal } from '../app/calendar/GoodDayFinderModal';
 import { DayDetailSheet } from '../app/calendar/DayDetailSheet';
+import { MonthYearPickerModal } from '../app/calendar/MonthYearPickerModal';
 
 // Stub components for the modals to be implemented later
 const DateSearchModal = () => <View style={styles.sheet}><Text>Date Search Stub</Text></View>;
@@ -30,6 +31,9 @@ export const OverlayHost = observer(() => {
       break;
     case 'good_day_finder':
       content = <GoodDayFinderModal />;
+      break;
+    case 'month_year_picker':
+      content = <MonthYearPickerModal />;
       break;
     default:
       // Exhaustiveness check
