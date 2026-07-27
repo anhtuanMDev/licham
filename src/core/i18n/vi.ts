@@ -7,6 +7,8 @@ export default {
   "calendar.solar_day": "Ngày dương",
   "reminders.title": "Nhắc nhở",
   "reminders.empty": "Chưa có nhắc nhở nào",
+  "reminders.upcoming": "Sắp tới",
+  "reminders.past": "Đã qua",
   "reminders.deleteConfirmTitle": "Xóa nhắc nhở",
   "reminders.deleteConfirmMessage": "Bạn có chắc chắn muốn xóa nhắc nhở này?",
   "reminders.delete": "Xóa",

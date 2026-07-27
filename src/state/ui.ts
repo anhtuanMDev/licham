@@ -14,6 +14,7 @@ export type Toast = {
 };
 
 export const ui$ = observable({
+  activeTab: 'calendar' as 'calendar' | 'reminders' | 'settings',
   modal: null as (ModalPayload & { id: string; priority?: 'critical' | 'normal' }) | null,
   modalQueue: [] as (ModalPayload & { id: string; priority: 'critical' | 'normal' })[],
   toastQueue: [] as Toast[],

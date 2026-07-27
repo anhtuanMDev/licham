@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View, Pressable, Text } from 'react-native';
 import { CalendarScreen } from './src/app/calendar/CalendarScreen';
 import { RemindersScreen } from './src/app/reminders/RemindersScreen';
@@ -10,11 +10,12 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { iapManager } from './src/core/iap/iapManager';
 import { useAppTheme } from './src/core/theme';
-import { observer } from '@legendapp/state/react';
+import { useSelector } from '@legendapp/state/react';
+import { ui$ } from './src/state/ui';
 import { t } from './src/core/i18n/t';
 
-const App = observer(() => {
-  const [tab, setTab] = useState<'calendar' | 'reminders' | 'settings'>('calendar');
+const App = () => {
+  const tab = useSelector(() => ui$.activeTab.get());
 
   const { colors, scale } = useAppTheme();
 
@@ -38,13 +39,13 @@ const App = observer(() => {
         </View>
 
         <View style={[styles.tabBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-          <Pressable style={styles.tabItem} onPress={() => setTab('calendar')}>
+          <Pressable style={styles.tabItem} onPress={() => ui$.activeTab.set('calendar')}>
             <Text style={[styles.tabText, { fontSize: scale(16) }, tab === 'calendar' && [styles.activeTabText, { color: colors.primary }]]}>{t('common.calendar')}</Text>
           </Pressable>
-          <Pressable style={styles.tabItem} onPress={() => setTab('reminders')}>
+          <Pressable style={styles.tabItem} onPress={() => ui$.activeTab.set('reminders')}>
             <Text style={[styles.tabText, { fontSize: scale(16) }, tab === 'reminders' && [styles.activeTabText, { color: colors.primary }]]}>{t('reminders.title')}</Text>
           </Pressable>
-          <Pressable style={styles.tabItem} onPress={() => setTab('settings')}>
+          <Pressable style={styles.tabItem} onPress={() => ui$.activeTab.set('settings')}>
             <Text style={[styles.tabText, { fontSize: scale(16) }, tab === 'settings' && [styles.activeTabText, { color: colors.primary }]]}>{t('settings.title')}</Text>
           </Pressable>
         </View>
@@ -55,7 +56,7 @@ const App = observer(() => {
       </SafeAreaView>
     </SafeAreaProvider>
   );
-});
+};
 
 const styles = StyleSheet.create({
   container: {

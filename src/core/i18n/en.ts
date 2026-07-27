@@ -7,6 +7,8 @@ export default {
   "calendar.solar_day": "Solar Day",
   "reminders.title": "Reminders",
   "reminders.empty": "No reminders yet",
+  "reminders.upcoming": "Upcoming",
+  "reminders.past": "Past",
   "reminders.deleteConfirmTitle": "Delete reminder",
   "reminders.deleteConfirmMessage": "Are you sure you want to delete this reminder?",
   "reminders.delete": "Delete",

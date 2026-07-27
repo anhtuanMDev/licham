@@ -44,7 +44,12 @@ export const CalendarScreen = observer(() => {
   const MONTH_PAGER_RADIUS = 12;
   const jumpDate = calendar$.jumpDate.get();
   
-  const [baseDate, setBaseDate] = useState({ year: currentMonth.year, month: currentMonth.month });
+  const [baseDate, setBaseDate] = useState(() => {
+    if (jumpDate) {
+      return { year: jumpDate.year, month: jumpDate.month };
+    }
+    return { year: currentMonth.year, month: currentMonth.month };
+  });
 
   useEffect(() => {
     if (jumpDate) {

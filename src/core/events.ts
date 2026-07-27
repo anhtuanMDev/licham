@@ -62,3 +62,42 @@ export function getEventsForDate(solarDate: Date, lunarDate: LunarDate): Transla
 
   return events;
 }
+
+export type PredefinedEvent = {
+  id: string;
+  key: TranslationKey;
+  solarDate: Date;
+  lunarDate: LunarDate;
+};
+
+/**
+ * Iterates through all days of a given solar year to collect all predefined events.
+ * This is robust and reuses getEventsForDate logic.
+ */
+export function getAllPredefinedEventsForYear(year: number): PredefinedEvent[] {
+  const allEvents: PredefinedEvent[] = [];
+  const { solarToLunar } = require('./lunar/convert');
+
+  // Start from Jan 1st of the year
+  const date = new Date(year, 0, 1);
+
+  // Loop until the year changes
+  while (date.getFullYear() === year) {
+    const lunar = solarToLunar(date.getDate(), date.getMonth() + 1, date.getFullYear());
+    const keys = getEventsForDate(date, lunar);
+    
+    for (const key of keys) {
+      allEvents.push({
+        id: `predef_${key}_${year}`,
+        key,
+        solarDate: new Date(date), // copy
+        lunarDate: lunar,
+      });
+    }
+    
+    // Move to next day
+    date.setDate(date.getDate() + 1);
+  }
+
+  return allEvents;
+}

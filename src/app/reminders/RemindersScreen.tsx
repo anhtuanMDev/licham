@@ -1,17 +1,117 @@
-import { LegendList } from '@legendapp/list/react-native';
-import { observer } from '@legendapp/state/react';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { overlay } from '../../overlay/overlay';
-import { reminders$, remindersActions } from '../../state/reminders';
+import { observer } from '@legendapp/state/react';
+import { LegendList } from '@legendapp/list/react-native';
+import { format, parse, startOfDay } from 'date-fns';
+
 import { useAppTheme } from '../../core/theme';
 import { t } from '../../core/i18n/t';
+import { overlay } from '../../overlay/overlay';
+import { reminders$, remindersActions, Reminder } from '../../state/reminders';
+import { ui$ } from '../../state/ui';
+import { calendar$ } from '../../state/calendar';
+import { getAllPredefinedEventsForYear } from '../../core/events';
+import { solarToLunar, lunarToSolar, LunarDate } from '../../core/lunar/convert';
+
+type UnifiedEvent = {
+  id: string;
+  title: string;
+  type: 'predefined' | 'custom';
+  solarDate: Date;
+  lunarDate: LunarDate;
+  originalId?: string; // for custom events
+};
 
 export const RemindersScreen = observer(() => {
   const insets = useSafeAreaInsets();
-  const reminders = reminders$.get();
   const { colors, scale } = useAppTheme();
+  
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+  const reminders = reminders$.get();
+  
+  const currentYear = new Date().getFullYear();
+  const today = startOfDay(new Date());
+
+  // Aggregate all events for the current year
+  const unifiedEvents = useMemo(() => {
+    const events: UnifiedEvent[] = [];
+    
+    // 1. Predefined Events (Holidays)
+    const predefined = getAllPredefinedEventsForYear(currentYear);
+    for (const p of predefined) {
+      events.push({
+        id: p.id,
+        title: t(p.key) || p.key,
+        type: 'predefined',
+        solarDate: p.solarDate,
+        lunarDate: p.lunarDate,
+      });
+    }
+    
+    // 2. Custom User Reminders
+    for (const r of reminders) {
+      let eventSolarDate: Date | null = null;
+      let eventLunarDate: LunarDate | null = null;
+      
+      if (r.calendarType === 'solar') {
+        const parsed = parse(r.date, 'yyyy-MM-dd', new Date());
+        if (!isNaN(parsed.getTime())) {
+          // If repeatYearly, project to current year
+          const projectedDate = r.repeatYearly ? new Date(currentYear, parsed.getMonth(), parsed.getDate()) : parsed;
+          if (projectedDate.getFullYear() === currentYear) {
+            eventSolarDate = projectedDate;
+            eventLunarDate = solarToLunar(projectedDate.getDate(), projectedDate.getMonth() + 1, projectedDate.getFullYear());
+          }
+        }
+      } else {
+        // Lunar reminder (date is dd/MM/yyyy)
+        const parts = r.date.split('/');
+        if (parts.length === 3) {
+          const lDay = parseInt(parts[0], 10);
+          const lMonth = parseInt(parts[1], 10);
+          const lYear = r.repeatYearly ? currentYear : parseInt(parts[2], 10);
+          
+          // Note: for repeatYearly, lunar year = current solar year. 
+          // (They roughly align. e.g. Tet is Lunar month 1, Solar Jan/Feb)
+          if (r.repeatYearly || lYear === currentYear || (lYear === currentYear - 1 && lMonth === 12)) {
+            // Convert to solar to check if it falls in currentYear
+            // This isn't perfect for edge cases but good enough for general display
+            const solar = lunarToSolar(lDay, lMonth, lYear);
+            if (solar.getFullYear() === currentYear) {
+              eventSolarDate = solar;
+              eventLunarDate = { day: lDay, month: lMonth, year: lYear, isLeap: false };
+            }
+          }
+        }
+      }
+      
+      if (eventSolarDate && eventLunarDate) {
+        events.push({
+          id: `custom_${r.id}_${currentYear}`,
+          title: r.title,
+          type: 'custom',
+          solarDate: eventSolarDate,
+          lunarDate: eventLunarDate,
+          originalId: r.id,
+        });
+      }
+    }
+    
+    // Sort all events chronologically
+    return events.sort((a, b) => a.solarDate.getTime() - b.solarDate.getTime());
+  }, [reminders, currentYear]);
+
+  // Split into Upcoming and Past
+  const { upcoming, past } = useMemo(() => {
+    const todayTime = today.getTime();
+    return {
+      past: unifiedEvents.filter(e => e.solarDate.getTime() < todayTime).reverse(), // Most recent past first
+      upcoming: unifiedEvents.filter(e => e.solarDate.getTime() >= todayTime) // Soonest upcoming first
+    };
+  }, [unifiedEvents, today]);
+  
+  const displayData = activeTab === 'upcoming' ? upcoming : past;
 
   const handleAdd = () => {
     overlay.showModal({ type: 'reminder_edit', props: {} });
@@ -30,39 +130,112 @@ export const RemindersScreen = observer(() => {
       }}
     ]);
   };
+  
+  const handleItemPress = (item: UnifiedEvent) => {
+    // Navigate to calendar screen and focus on the event's date
+    const isoDate = format(item.solarDate, 'yyyy-MM-dd');
+    calendar$.selectedDate.set(isoDate);
+    calendar$.jumpDate.set({ year: item.solarDate.getFullYear(), month: item.solarDate.getMonth() + 1 });
+    ui$.activeTab.set('calendar');
+  };
+
+  const renderItem = ({ item }: { item: UnifiedEvent }) => {
+    const isCustom = item.type === 'custom';
+    
+    return (
+      <Pressable 
+        style={({ pressed }) => [
+          styles.card, 
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          pressed && { opacity: 0.7 }
+        ]}
+        onPress={() => handleItemPress(item)}
+      >
+        <View style={styles.cardInfo}>
+          <Text style={[styles.cardTitle, { fontSize: scale(17), color: colors.text }]}>
+            {item.title}
+          </Text>
+          
+          <View style={styles.dateRow}>
+            <Text style={[styles.solarDateText, { fontSize: scale(14), color: colors.primary }]}>
+              {format(item.solarDate, 'dd/MM/yyyy')}
+            </Text>
+            <Text style={[styles.dot, { color: colors.textMuted }]}>•</Text>
+            <Text style={[styles.lunarDateText, { fontSize: scale(14), color: colors.textMuted }]}>
+              {t('reminders.lunar')}: {item.lunarDate.day}/{item.lunarDate.month}
+            </Text>
+          </View>
+        </View>
+        
+        {isCustom ? (
+          <Pressable hitSlop={15} onPress={() => handleEdit(item.originalId!)} style={styles.actionBtn}>
+            <Text style={{ fontSize: scale(14), fontWeight: '600', color: colors.primary }}>Sửa</Text>
+          </Pressable>
+        ) : (
+          <View style={[styles.badge, { backgroundColor: colors.border }]}>
+            <Text style={[styles.badgeText, { fontSize: scale(11), color: colors.textMuted }]}>
+              Sự kiện
+            </Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { fontSize: scale(24), color: colors.text }]}>{t('reminders.title')}</Text>
+        <Text style={[styles.headerTitle, { fontSize: scale(28), color: colors.text }]}>
+          {t('reminders.title')} {currentYear}
+        </Text>
+        
+        <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
+          <Pressable 
+            style={[styles.tabBtn, activeTab === 'upcoming' && { backgroundColor: colors.primary }]}
+            onPress={() => setActiveTab('upcoming')}
+          >
+            <Text style={[
+              styles.tabBtnText, 
+              { fontSize: scale(14), color: colors.text },
+              activeTab === 'upcoming' && { color: '#fff', fontWeight: 'bold' }
+            ]}>{t('reminders.upcoming')}</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.tabBtn, activeTab === 'past' && { backgroundColor: colors.primary }]}
+            onPress={() => setActiveTab('past')}
+          >
+            <Text style={[
+              styles.tabBtnText, 
+              { fontSize: scale(14), color: colors.text },
+              activeTab === 'past' && { color: '#fff', fontWeight: 'bold' }
+            ]}>{t('reminders.past')}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <LegendList
-        data={reminders}
+        key={activeTab}
+        data={displayData}
         keyExtractor={(item) => item.id}
         estimatedItemSize={80}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={[styles.emptyText, { fontSize: scale(14), color: colors.textMuted }]}>{t('reminders.empty')}</Text>
+            <Text style={[styles.emptyText, { fontSize: scale(16), color: colors.textMuted }]}>
+              {t('reminders.empty')}
+            </Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable style={({ pressed }) => [styles.card, { borderBottomColor: colors.border }, pressed && { opacity: 0.7 }]} onPress={() => handleEdit(item.id)}>
-            <View style={styles.cardInfo}>
-              <Text style={[styles.cardTitle, { fontSize: scale(16), color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.cardDate, { fontSize: scale(14), color: colors.textMuted }]}>
-                {item.date} ({item.calendarType === 'lunar' ? t('reminders.lunar') : t('reminders.solar')})
-                {item.repeatYearly ? ` - ${t('reminders.yearly')}` : ''}
-              </Text>
-            </View>
-            <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
-              <Text style={[styles.deleteText, { fontSize: scale(14), color: colors.danger }]}>{t('reminders.delete')}</Text>
-            </Pressable>
-          </Pressable>
-        )}
+        renderItem={renderItem}
       />
 
-      <Pressable style={({ pressed }) => [styles.fab, { bottom: insets.bottom + 20, backgroundColor: colors.primary }, pressed && { opacity: 0.8 }]} onPress={handleAdd}>
+      <Pressable 
+        style={({ pressed }) => [
+          styles.fab, 
+          { bottom: insets.bottom + 20, backgroundColor: colors.primary }, 
+          pressed && { opacity: 0.8 }
+        ]} 
+        onPress={handleAdd}
+      >
         <Text style={[styles.fabText, { fontSize: scale(32) }]}>+</Text>
       </Pressable>
     </View>
@@ -74,16 +247,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 16,
-    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: {
-    fontWeight: 'bold',
+    fontWeight: '700',
+    marginBottom: 20,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    padding: 4,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  tabBtnText: {
+    fontWeight: '500',
   },
   card: {
     flexDirection: 'row',
     padding: 16,
-    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
   },
   cardInfo: {
@@ -91,20 +282,42 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  cardDate: {},
-  deleteBtn: {
-    padding: 8,
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  deleteText: {
-    fontWeight: '500',
+  solarDateText: {
+    fontWeight: '600',
+  },
+  lunarDateText: {
+    fontWeight: '400',
+  },
+  dot: {
+    marginHorizontal: 8,
+  },
+  actionBtn: {
+    paddingLeft: 16,
+    paddingVertical: 8,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   empty: {
     padding: 32,
     alignItems: 'center',
+    marginTop: 40,
   },
-  emptyText: {},
+  emptyText: {
+    fontWeight: '500',
+  },
   fab: {
     position: 'absolute',
     right: 20,
