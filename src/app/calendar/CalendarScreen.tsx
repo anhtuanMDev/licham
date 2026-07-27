@@ -9,6 +9,7 @@ import { CalendarGrid } from '../../components/CalendarGrid';
 import { overlay } from '../../overlay/overlay';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { t } from '../../core/i18n/t';
+import { MonthEventList } from '../../components/MonthEventList';
 
 const { width } = Dimensions.get('window');
 
@@ -103,19 +104,23 @@ export const CalendarScreen = observer(() => {
         ))}
       </View>
       
-      <LegendList
-        key={`${baseDate.year}-${baseDate.month}`}
-        data={data}
-        renderItem={renderItem}
-        horizontal
-        pagingEnabled
-        estimatedItemSize={width}
-        keyExtractor={(item: MonthItem) => item.id}
-        showsHorizontalScrollIndicator={false}
-        initialScrollOffset={width * MONTH_PAGER_RADIUS}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-      />
+      <View style={styles.calendarContainer}>
+        <LegendList
+          key={`${baseDate.year}-${baseDate.month}`}
+          data={data}
+          renderItem={renderItem}
+          horizontal
+          pagingEnabled
+          estimatedItemSize={width}
+          keyExtractor={(item: MonthItem) => item.id}
+          showsHorizontalScrollIndicator={false}
+          initialScrollOffset={width * MONTH_PAGER_RADIUS}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+        />
+      </View>
+
+      <MonthEventList />
       
       {!isPremium && (
         <View style={styles.adContainer}>
@@ -172,6 +177,9 @@ const styles = StyleSheet.create({
   },
   page: {
     width,
+  },
+  calendarContainer: {
+    // Allows the LegendList to wrap its content height instead of expanding
   },
   adContainer: {
     alignItems: 'center',
