@@ -25,7 +25,10 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
 
   const handlePress = () => {
     calendar$.selectedDate.set(dateIso);
-    // Optionally open the detail sheet on press
+  };
+
+  const handleLongPress = () => {
+    calendar$.selectedDate.set(dateIso);
     overlay.showModal({ type: 'day_detail', props: { dateIso } });
   };
 
@@ -37,6 +40,7 @@ export const DayCell = observer(({ dateIso, solarDay, lunarInfo, isToday, isCurr
         isToday && styles.todayContainer
       ]} 
       onPress={handlePress}
+      onLongPress={handleLongPress}
       accessible={true}
       accessibilityRole="button"
       accessibilityLabel={`${t('calendar.accessibility.day' as any)} ${solarDay} ${t('calendar.accessibility.solar_month' as any)}. ${lunarInfo ? `${t('calendar.accessibility.day' as any)} ${lunarInfo.day} ${t('calendar.accessibility.lunar_month' as any)} ${lunarInfo.month} ${t('calendar.accessibility.lunar' as any)}.` : ''}`}

@@ -14,8 +14,9 @@ This Privacy Policy explains what information our app collects and how it is use
 This app **does not have a cloud sync feature**. We do not send your calendar data, reminders, or any usage metrics to our servers. Your data stays on your phone.
 
 ## 3. Third-Party Services
-We may use industry-standard local crash reporting tools (e.g., Firebase Crashlytics) to help us identify and fix bugs. These tools only collect anonymous stack traces when the app crashes. They do not have access to your calendar events or personal reminders.
-
+We use third-party services that may collect information used to identify you or serve personalized content, specifically:
+- **Google AdMob**: Used to display banner advertisements in the free version of the app. AdMob may collect and process device identifiers, location data, and other demographic or interest data to serve targeted ads. You can opt out of personalized advertising through your device's privacy settings.
+- **Firebase Crashlytics**: Used to help us identify and fix bugs. These tools only collect anonymous stack traces when the app crashes. They do not have access to your calendar events or personal reminders.
 ## 4. Permissions
 The app may request the following permissions strictly to provide its core functionality:
 - **Notifications:** To alert you about the reminders you have set (e.g., anniversaries, full moon days).

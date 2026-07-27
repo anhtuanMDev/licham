@@ -5,16 +5,30 @@ const generateId = () => `id_${Date.now()}_${++idCounter}`;
 
 export const overlay = {
   showModal(payload: ModalPayload, priority: 'critical' | 'normal' = 'normal') {
-    // In a real app with queuing, we would push to an array.
-    // For MVP, we just set the single active modal.
-    ui$.modal.set({
-      id: generateId(),
-      ...payload
-    });
+    const newModal = { id: generateId(), priority, ...payload };
+    const current = ui$.modal.get();
+    
+    if (!current) {
+      ui$.modal.set(newModal);
+    } else {
+      const queue = ui$.modalQueue.get();
+      if (priority === 'critical') {
+        ui$.modalQueue.set([newModal, ...queue]);
+      } else {
+        ui$.modalQueue.push(newModal);
+      }
+    }
   },
   
   closeModal() {
-    ui$.modal.set(null);
+    const queue = ui$.modalQueue.get();
+    if (queue && queue.length > 0) {
+      const next = queue[0];
+      ui$.modalQueue.set(queue.slice(1));
+      ui$.modal.set(next);
+    } else {
+      ui$.modal.set(null);
+    }
   },
 
   showToast(message: string, opts?: { type?: 'info' | 'error' | 'success'; duration?: number }) {

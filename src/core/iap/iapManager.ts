@@ -1,4 +1,4 @@
-import { initConnection, endConnection, getAvailablePurchases, purchaseUpdatedListener, purchaseErrorListener } from 'react-native-iap';
+import { initConnection, endConnection, getAvailablePurchases, purchaseUpdatedListener, purchaseErrorListener, finishTransaction, requestPurchase } from 'react-native-iap';
 import { Platform } from 'react-native';
 import { settings$ } from '../../state/settings';
 import { overlay } from '../../overlay/overlay';
@@ -31,10 +31,24 @@ export const iapManager = {
       // Auto restore/verify existing active purchases on app launch
       await this.verifyPurchases();
 
+      if (purchaseUpdateSubscription) {
+        purchaseUpdateSubscription.remove();
+        purchaseUpdateSubscription = null;
+      }
+      if (purchaseErrorSubscription) {
+        purchaseErrorSubscription.remove();
+        purchaseErrorSubscription = null;
+      }
+
       // Listen for incoming real-time purchases
       purchaseUpdateSubscription = purchaseUpdatedListener(async (purchase) => {
-        if (purchase.productId === PREMIUM_PRODUCT_ID || purchase.productId) {
+        if (purchase.productId === PREMIUM_PRODUCT_ID) {
           settings$.isPremium.set(true);
+          try {
+            await finishTransaction({ purchase, isConsumable: false });
+          } catch (ackErr) {
+            console.log('[IAP] Failed to finish transaction', ackErr);
+          }
           overlay.showToast('Cảm ơn bạn đã nâng cấp Premium!');
         }
       });
@@ -83,6 +97,24 @@ export const iapManager = {
       }
     } catch (err) {
       overlay.showToast('Không thể khôi phục mua hàng. Vui lòng thử lại sau.', { type: 'error' });
+    }
+  },
+
+  async buyPremium() {
+    if (!isConnected) {
+      overlay.showToast('Dịch vụ mua hàng không khả dụng trên thiết bị này.', { type: 'error' });
+      return;
+    }
+    try {
+      await requestPurchase({
+        type: 'in-app',
+        request: {
+          apple: { sku: PREMIUM_PRODUCT_ID },
+          google: { skus: [PREMIUM_PRODUCT_ID] }
+        }
+      });
+    } catch (err: any) {
+      if (__DEV__) console.log('[IAP] Purchase error:', err?.message || err);
     }
   },
 

@@ -1,7 +1,7 @@
 import { LegendList } from '@legendapp/list/react-native';
 import { observer } from '@legendapp/state/react';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { overlay } from '../../overlay/overlay';
 import { reminders$, remindersActions } from '../../state/reminders';
@@ -19,8 +19,13 @@ export const RemindersScreen = observer(() => {
   };
 
   const handleDelete = (id: string) => {
-    remindersActions.deleteReminder(id);
-    overlay.showToast('Đã xóa nhắc nhở');
+    Alert.alert('Xóa nhắc nhở', 'Bạn có chắc chắn muốn xóa nhắc nhở này?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Xóa', style: 'destructive', onPress: () => {
+        remindersActions.deleteReminder(id);
+        overlay.showToast('Đã xóa nhắc nhở');
+      }}
+    ]);
   };
 
   return (

@@ -25,11 +25,12 @@ export const notifications = {
       const month = parseInt(monthStr, 10);
       let year = yearStr ? parseInt(yearStr, 10) : solarToLunar(now.getDate(), now.getMonth() + 1, now.getFullYear()).year;
       
-      targetSolarDate = lunarToSolar(day, month, year, 0); // 0 = not leap
+      const isLeap = reminder.calendarType === 'lunar' && reminder.isLeapMonth ? 1 : 0;
+      targetSolarDate = lunarToSolar(day, month, year, isLeap);
       
       if (reminder.repeatYearly && isBefore(targetSolarDate, now)) {
         year += 1;
-        targetSolarDate = lunarToSolar(day, month, year, 0);
+        targetSolarDate = lunarToSolar(day, month, year, isLeap);
       }
     }
 

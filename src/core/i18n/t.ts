@@ -1,11 +1,6 @@
 import vi from './vi';
 import en from './en';
-import { observable } from '@legendapp/state';
-
-// We could hook this into legend-state for reactivity when language changes
-export const i18nState$ = observable({
-  locale: 'vi' as 'vi' | 'en'
-});
+import { settings$ } from '../../state/settings';
 
 const dictionaries = {
   vi,
@@ -20,10 +15,8 @@ type NestedKeyOf<ObjectType extends object> =
 
 export type TranslationKey = keyof typeof vi;
 
-
-
 export function t(key: TranslationKey): string {
-  const locale = i18nState$.locale.get();
-  const dict = dictionaries[locale] || dictionaries.vi;
+  const locale = settings$.locale.get() || 'vi';
+  const dict = dictionaries[locale as 'vi' | 'en'] || dictionaries.vi;
   return dict[key] || key;
 }

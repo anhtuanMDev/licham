@@ -18,6 +18,7 @@ export type LunarReminder = {
   date: string; // DD/MM/YYYY
   repeatYearly: boolean;
   notifId?: string;
+  isLeapMonth?: boolean;
 };
 
 export type Reminder = SolarReminder | LunarReminder;

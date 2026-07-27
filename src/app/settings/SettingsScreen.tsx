@@ -23,23 +23,53 @@ export const SettingsScreen = observer(() => {
     iapManager.restorePurchases();
   };
 
+  const cycleTheme = () => {
+    const themes: Array<'light' | 'dark' | 'high-contrast'> = ['light', 'dark', 'high-contrast'];
+    const currentIndex = themes.indexOf(settings.theme);
+    settings$.theme.set(themes[(currentIndex + 1) % themes.length]);
+  };
+
+  const cycleFontScale = () => {
+    const scales = [0.8, 1.0, 1.2];
+    const currentIndex = scales.indexOf(settings.fontScale) >= 0 ? scales.indexOf(settings.fontScale) : 1;
+    settings$.fontScale.set(scales[(currentIndex + 1) % scales.length]);
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.header}>{t('settings.title' as any)}</Text>
+      <Text style={styles.header}>{t('settings.title')}</Text>
       
       <View style={styles.row}>
-        <Text style={styles.label}>{t('settings.language' as any)}</Text>
+        <Text style={styles.label}>{t('settings.language')}</Text>
         <Text style={styles.value} onPress={toggleLocale}>
           {settings.locale.toUpperCase()}
         </Text>
       </View>
       
       <View style={styles.row}>
-        <Text style={styles.label}>{t('settings.notifications' as any)}</Text>
+        <Text style={styles.label}>{t('settings.notifications')}</Text>
         <Switch 
           value={settings.notificationsEnabled} 
           onValueChange={toggleNotifications} 
         />
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Giao diện (Theme)</Text>
+        <Pressable hitSlop={10} onPress={cycleTheme} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <Text style={styles.value}>
+            {settings.theme === 'light' ? 'SÁNG' : settings.theme === 'dark' ? 'TỐI' : 'TƯƠNG PHẢN CAO'}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.row}>
+        <Text style={styles.label}>Cỡ chữ (Font Size)</Text>
+        <Pressable hitSlop={10} onPress={cycleFontScale} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <Text style={styles.value}>
+            {settings.fontScale === 0.8 ? 'NHỎ' : settings.fontScale === 1.2 ? 'LỚN' : 'BÌNH THƯỜNG'}
+          </Text>
+        </Pressable>
       </View>
 
       <Pressable style={styles.row} onPress={handleRestore}>
@@ -49,19 +79,19 @@ export const SettingsScreen = observer(() => {
       
       <View style={styles.premiumBlock}>
         <Text style={styles.premiumTitle}>
-          {settings.isPremium ? t('settings.premium.member' as any) : t('settings.premium.upgrade' as any)}
+          {settings.isPremium ? t('settings.premium.member') : t('settings.premium.upgrade')}
         </Text>
         <Text style={styles.premiumDesc}>
           {settings.isPremium 
-            ? t('settings.premium.thanks' as any) 
-            : t('settings.premium.desc' as any)}
+            ? t('settings.premium.thanks') 
+            : t('settings.premium.desc')}
         </Text>
         {!settings.isPremium && (
           <Pressable 
             style={styles.premiumBtn}
-            onPress={() => settings$.isPremium.set(true)}
+            onPress={() => iapManager.buyPremium()}
           >
-            <Text style={styles.premiumBtnText}>{t('settings.premium.buy' as any)}</Text>
+            <Text style={styles.premiumBtnText}>{t('settings.premium.buy')}</Text>
           </Pressable>
         )}
       </View>
