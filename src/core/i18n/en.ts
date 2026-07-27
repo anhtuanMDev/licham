@@ -37,6 +37,7 @@ export default {
   
   "calendar.month": "Month",
   "calendar.find_good_day": "Find Good Days",
+  "calendar.find_good_day_hint": "Double tap to open good day finder",
   "calendar.weekday.t2": "Mon",
   "calendar.weekday.t3": "Tue",
   "calendar.weekday.t4": "Wed",

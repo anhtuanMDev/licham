@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Pressable, ViewToken } from 'react-native';
 import { LegendList } from '@legendapp/list/react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from '@legendapp/state/react';
@@ -38,7 +38,19 @@ export const CalendarScreen = observer(() => {
   const isPremium = settings$.isPremium.get();
   
   // We'd dynamically extend this array in a real app when scrolling near the edges
-  const [data] = useState<MonthItem[]>(() => generateMonths(currentMonth.year, currentMonth.month, 12));
+  const MONTH_PAGER_RADIUS = 12;
+  const [data] = useState<MonthItem[]>(() => generateMonths(currentMonth.year, currentMonth.month, MONTH_PAGER_RADIUS));
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const visible = viewableItems[0]?.item as MonthItem | undefined;
+      if (visible) {
+        calendar$.visibleMonth.set({ year: visible.year, month: visible.month });
+      }
+    }
+  ).current;
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 51 }).current;
   
   const renderItem = ({ item }: { item: MonthItem }) => (
     <View style={styles.page}>
@@ -57,7 +69,7 @@ export const CalendarScreen = observer(() => {
           onPress={() => overlay.showModal({ type: 'good_day_finder' })}
           accessibilityRole="button"
           accessibilityLabel={t('calendar.find_good_day' as any)}
-          accessibilityHint="Nhấn đúp để mở công cụ tìm ngày tốt"
+          accessibilityHint={t('calendar.find_good_day_hint' as any)}
         >
           <Text style={styles.goodDayBtnText} allowFontScaling={true}>{t('calendar.find_good_day' as any)}</Text>
         </Pressable>
@@ -85,7 +97,9 @@ export const CalendarScreen = observer(() => {
         estimatedItemSize={width}
         keyExtractor={(item: MonthItem) => item.id}
         showsHorizontalScrollIndicator={false}
-        // initialScrollIndex to center on the current month would be added here
+        initialScrollOffset={width * MONTH_PAGER_RADIUS}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
       />
       
       {!isPremium && (

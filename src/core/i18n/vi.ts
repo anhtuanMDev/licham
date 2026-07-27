@@ -37,6 +37,7 @@ export default {
   
   "calendar.month": "Tháng",
   "calendar.find_good_day": "Tìm Ngày Tốt",
+  "calendar.find_good_day_hint": "Nhấn đúp để mở công cụ tìm ngày tốt",
   "calendar.weekday.t2": "T2",
   "calendar.weekday.t3": "T3",
   "calendar.weekday.t4": "T4",
