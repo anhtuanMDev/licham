@@ -40,7 +40,6 @@ export default {
   "calendar.find_good_day_hint": "Nhấn đúp để mở công cụ tìm ngày tốt",
   "calendar.select_month_year": "Chọn Tháng & Năm",
   "common.done": "Xong",
-  "common.cancel": "Hủy",
   "calendar.weekday.t2": "T2",
   "calendar.weekday.t3": "T3",
   "calendar.weekday.t4": "T4",

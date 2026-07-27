@@ -7,7 +7,7 @@ import { overlay } from './overlay';
 import { ReminderDetailSheet } from '../app/reminders/ReminderDetailSheet';
 import { GoodDayFinderModal } from '../app/calendar/GoodDayFinderModal';
 import { DayDetailSheet } from '../app/calendar/DayDetailSheet';
-import { MonthYearPickerModal } from '../app/calendar/MonthYearPickerModal';
+import { MonthYearPickerModal } from '../app/calendar/MonthYearPicker';
 
 // Stub components for the modals to be implemented later
 const DateSearchModal = () => <View style={styles.sheet}><Text>Date Search Stub</Text></View>;
@@ -38,14 +38,16 @@ export const OverlayHost = observer(() => {
     default:
       // Exhaustiveness check
       const _exhaustiveCheck: never = currentModal;
-      break;
+      return _exhaustiveCheck;
   }
+  
+  const isCentered = currentModal.type === 'month_year_picker';
   
   return (
     <Modal visible={true} transparent={true} animationType="fade">
-      <View style={styles.backdrop}>
+      <View style={[styles.backdrop, isCentered && styles.backdropCentered]}>
         <Pressable style={styles.backdropPressable} onPress={overlay.closeModal} />
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, isCentered && styles.modalContentCentered]}>
           {content}
         </View>
       </View>
@@ -68,6 +70,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     padding: 16,
     minHeight: 200,
+  },
+  backdropCentered: {
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalContentCentered: {
+    borderRadius: 16,
   },
   sheet: {
     padding: 16,
